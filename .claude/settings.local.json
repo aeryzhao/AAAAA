@@ -112,7 +112,13 @@
       "Bash(curl -sL --max-time 30 --retry 2 -A \"Mozilla/5.0\" -H \"Referer: https://baike.baidu.com/\" -o \"images/赣州瑞金共和国摇篮景区_b1.jpg\" \"https://bkimg.cdn.bcebos.com/pic/c9fcc3cec3fdfc039245d027796\")",
       "Bash(curl -sL --max-time 30 --retry 2 -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://baike.baidu.com/\" -o \"images/赣州瑞金共和国摇篮景区_b1.jpg\" \"https://bkimg.cdn.bcebos.com/pic/c9fcc3cec3fdfc039245d02779669094a4c27c1e88a1?x-bce-process=image/resize,m_lfit,w_800,limit_1/quality,Q_80\")",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(lark-cli contact *)",
+      "Bash(lark-cli auth *)",
+      "Bash(lark-cli im *)"
     ]
   }
 }

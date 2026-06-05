@@ -82,6 +82,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .modal-links{margin-top:16px;padding-top:16px;border-top:1px solid #eee}
 .link-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;font-size:.9em;font-weight:500;text-decoration:none;color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);transition:transform .15s,box-shadow .15s}
 .link-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.35)}
+.link-btn.map-btn{background:linear-gradient(135deg,#10b981,#059669)}
+.link-btn.map-btn:hover{box-shadow:0 4px 12px rgba(16,185,129,.35)}
+.card-map-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:.78em;font-weight:500;text-decoration:none;color:#059669;background:#ecfdf5;border:1px solid #a7f3d0;transition:all .15s;cursor:pointer}
+.card-map-btn:hover{background:#d1fae5;border-color:#6ee7b7;transform:translateY(-1px)}
 @media(max-width:768px){
   .header h1{font-size:1.5em}
   .filters{flex-direction:column}
@@ -202,6 +206,13 @@ function getImgBg(spot){
   return `linear-gradient(135deg,${imgColors[idx]},${imgColors[(idx+3)%imgColors.length]})`;
 }
 
+function getAmapUrl(spot){
+  if(spot.lat&&spot.lng){
+    return `https://uri.amap.com/marker?position=${spot.lng},${spot.lat}&name=${encodeURIComponent(spot.name)}`;
+  }
+  return `https://uri.amap.com/search?keyword=${encodeURIComponent(spot.name+' '+spot.city)}`;
+}
+
 function renderCard(spot,i){
   const idx=spots.indexOf(spot);
   const imgHtml=spot.img
@@ -220,6 +231,7 @@ function renderCard(spot,i){
     </div>
     <div class="card-footer">
       <span class="card-location">📍 ${spot.province}·${spot.city}</span>
+      <a class="card-map-btn" href="${getAmapUrl(spot)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ 地图</a>
       <span>${spot.year}年</span>
     </div>
   </div>`;
@@ -280,7 +292,8 @@ function openModal(idx){
     <div class="modal-info-item"><div class="label">入选年份</div><div class="value">${s.year}年</div></div>
     <div class="modal-info-item"><div class="label">地理坐标</div><div class="value">${s.lat?`${s.lat}°N, ${s.lng}°E`:'—'}</div></div>
     <div class="modal-info-item"><div class="label">景区级别</div><div class="value">国家AAAAA级</div></div>`;
-  document.getElementById('modalLinks').innerHTML=`<a class="link-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[s.name]||s.name)}" target="_blank" rel="noopener">百度百科</a>`;
+  document.getElementById('modalLinks').innerHTML=`<a class="link-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[s.name]||s.name)}" target="_blank" rel="noopener">📖 百度百科</a>
+    <a class="link-btn map-btn" href="${getAmapUrl(s)}" target="_blank" rel="noopener">🗺️ 高德地图</a>`;
   document.getElementById('modal').classList.add('active');
   document.body.style.overflow='hidden';
 }
