@@ -6,104 +6,153 @@
 <title>中国5A级景区大全</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--primary:#1a73e8;--primary-light:#e8f0fe;--bg:#f5f7fa;--card:#fff;--text:#333;--text-light:#666;--border:#e0e0e0;--shadow:0 2px 8px rgba(0,0,0,.08)}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
-.header{background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);color:#fff;padding:40px 20px 30px;text-align:center}
-.header h1{font-size:2.2em;margin-bottom:8px;letter-spacing:2px}
-.header p{opacity:.85;font-size:1.05em}
-.stats-bar{display:flex;justify-content:center;gap:40px;margin-top:20px;flex-wrap:wrap}
-.stat-item{text-align:center}
-.stat-num{font-size:1.8em;font-weight:700}
-.stat-label{font-size:.85em;opacity:.8}
-.container{max-width:1400px;margin:0 auto;padding:20px}
-.filters{background:var(--card);border-radius:12px;padding:20px 24px;margin-bottom:24px;box-shadow:var(--shadow);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.filter-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px}
-.filter-group label{font-size:.82em;color:var(--text-light);font-weight:500}
-.filter-group select,.filter-group input{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.95em;background:#fff;outline:none;transition:border .2s}
-.filter-group select:focus,.filter-group input:focus{border-color:var(--primary)}
-.search-box{position:relative;flex:2;min-width:250px}
-.search-box input{width:100%;padding:10px 16px 10px 40px;border:1px solid var(--border);border-radius:8px;font-size:.95em;outline:none;transition:border .2s}
-.search-box input:focus{border-color:var(--primary)}
-.search-box::before{content:"🔍";position:absolute;left:12px;top:calc(.82em + 4px + 50%);transform:translateY(-50%);font-size:1em;pointer-events:none}
-.result-info{margin-bottom:16px;color:var(--text-light);font-size:.9em}
-.result-info strong{color:var(--primary)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-.card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;cursor:pointer;position:relative}
-.card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
-.card-img{height:180px;background-size:cover;background-position:center;position:relative;overflow:hidden}
-.card-img::after{content:"";position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
-.card-img img{width:100%;height:100%;object-fit:cover}
-.card-badge{position:absolute;top:12px;right:12px;background:rgba(26,115,232,.9);color:#fff;padding:3px 10px;border-radius:20px;font-size:.75em;font-weight:500}
-.card-body{padding:16px 18px}
-.card-title{font-size:1.15em;font-weight:600;margin-bottom:8px;color:var(--text)}
-.card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.card-tag{padding:2px 8px;border-radius:4px;font-size:.78em;font-weight:500}
-.tag-province{background:#e3f2fd;color:#1565c0}
-.tag-category{background:#f3e5f5;color:#7b1fa2}
-.tag-year{background:#e8f5e9;color:#2e7d32}
-.card-desc{font-size:.88em;color:var(--text-light);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.card-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.82em;color:var(--text-light)}
-.card-location{display:flex;align-items:center;gap:4px}
-.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center;padding:20px}
+:root{
+  --primary:#0f766e;
+  --primary-dark:#134e4a;
+  --accent:#d97706;
+  --bg:#f7f5ef;
+  --surface:#fffdf8;
+  --surface-soft:#f0eee5;
+  --text:#17211f;
+  --text-light:#65736f;
+  --muted:#8a7560;
+  --border:#ded8ca;
+  --ring:rgba(15,118,110,.22);
+  --shadow:0 18px 45px rgba(32,39,37,.1);
+  --shadow-soft:0 8px 24px rgba(32,39,37,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:radial-gradient(circle at 15% 0,#e6f2ee 0,transparent 28%),linear-gradient(180deg,#fbfaf6 0,#f4f0e7 100%);color:var(--text);line-height:1.65}
+button,input,select{font:inherit}
+button,a,select{cursor:pointer}
+:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+.header{position:relative;overflow:hidden;color:#fff;padding:72px 24px 96px;text-align:left;background:linear-gradient(120deg,rgba(14,80,75,.9),rgba(32,79,60,.75)),url("images/丽江古城景区_2.JPG") center/cover}
+.header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(180deg,transparent,rgba(247,245,239,.98))}
+.hero-inner{position:relative;z-index:1;max-width:1180px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;margin-bottom:18px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(255,255,255,.13);backdrop-filter:blur(10px);font-size:.82em;font-weight:700;letter-spacing:.08em}
+.header h1{max-width:720px;font-size:clamp(2.1rem,5vw,4.8rem);line-height:1.05;margin-bottom:18px;letter-spacing:0;font-weight:800}
+.header p{max-width:680px;color:rgba(255,255,255,.86);font-size:1.08em}
+.stats-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:860px;margin-top:34px}
+.stat-item{padding:16px 18px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:rgba(255,255,255,.12);backdrop-filter:blur(14px)}
+.stat-num{font-size:1.65em;font-weight:800;line-height:1.1}
+.stat-label{font-size:.82em;color:rgba(255,255,255,.76);margin-top:5px}
+.container{position:relative;z-index:2;max-width:1400px;margin:-58px auto 0;padding:0 24px 28px}
+.filters{background:rgba(255,253,248,.92);border:1px solid rgba(222,216,202,.8);border-radius:8px;padding:18px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(3,minmax(160px,1fr)) minmax(260px,1.5fr);gap:14px;align-items:end;backdrop-filter:blur(18px)}
+.filter-group{display:flex;flex-direction:column;gap:6px;min-width:0}
+.filter-group label{font-size:.78em;color:var(--muted);font-weight:800;letter-spacing:.04em}
+.filter-group select,.filter-group input{width:100%;height:44px;padding:0 13px;border:1px solid var(--border);border-radius:7px;font-size:.94em;color:var(--text);background:#fff;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+.filter-group select:hover,.filter-group input:hover{border-color:#b8ab96}
+.filter-group select:focus,.filter-group input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--ring)}
+.search-box{position:relative}
+.search-box input{padding-left:40px}
+.search-box::before{content:"";position:absolute;left:14px;bottom:14px;width:13px;height:13px;border:2px solid var(--primary);border-radius:50%;pointer-events:none}
+.search-box::after{content:"";position:absolute;left:27px;bottom:12px;width:7px;height:2px;background:var(--primary);transform:rotate(45deg);border-radius:2px;pointer-events:none}
+.result-info{display:flex;align-items:center;justify-content:space-between;margin:22px 0 16px;color:var(--text-light);font-size:.94em}
+.result-info strong{color:var(--primary-dark);font-size:1.1em}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.card{background:var(--surface);border:1px solid rgba(222,216,202,.86);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-soft);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;cursor:pointer;position:relative;display:flex;flex-direction:column;height:100%}
+.card:hover{transform:translateY(-4px);box-shadow:0 22px 50px rgba(32,39,37,.14);border-color:#b9aa8f}
+.card-img{height:210px;background-size:cover;background-position:center;position:relative;overflow:hidden}
+.card-img::after{content:"";position:absolute;inset:auto 0 0;height:58%;background:linear-gradient(transparent,rgba(0,0,0,.58))}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-badge{position:absolute;top:12px;right:12px;background:rgba(255,253,248,.92);color:var(--primary-dark);padding:5px 10px;border-radius:999px;font-size:.74em;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.card-body{padding:17px 18px 14px;flex:1}
+.card-title{font-size:1.12em;font-weight:800;margin-bottom:10px;color:var(--text);line-height:1.35}
+.card-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.card-tag{display:inline-flex;align-items:center;min-height:24px;padding:3px 9px;border-radius:999px;font-size:.76em;font-weight:800;line-height:1}
+.tag-province{background:#dff3ee;color:#0f5f59}
+.tag-category{background:#fff1d6;color:#8a4b0f}
+.tag-year{background:#ece7dc;color:#665240}
+.card-desc{font-size:.9em;color:var(--text-light);line-height:1.78;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:4.8em}
+.card-footer{margin-top:auto;padding:12px 18px;border-top:1px solid rgba(222,216,202,.72);display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:.82em;color:var(--text-light)}
+.card-location{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(18,25,24,.62);z-index:1000;justify-content:center;align-items:center;padding:24px}
 .modal-overlay.active{display:flex}
-.modal{background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;position:relative}
-.modal-close{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.1);border:none;width:32px;height:32px;border-radius:50%;font-size:1.2em;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center}
-.modal-close:hover{background:rgba(0,0,0,.2)}
-.modal-img{width:100%;height:280px;background-size:cover;background-position:center;position:relative;overflow:hidden}
+.modal{background:var(--surface);border-radius:8px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 30px 90px rgba(0,0,0,.35)}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.7);width:38px;height:38px;border-radius:999px;font-size:1.1em;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;color:#1f2927;transition:background .2s,transform .2s}
+.modal-close:hover{background:#fff;transform:translateY(-1px)}
+.modal-img{width:100%;height:340px;background-size:cover;background-position:center;position:relative;overflow:hidden}
 .modal-img img{width:100%;height:100%;object-fit:cover}
-.modal-gallery{position:relative;width:100%;height:280px;overflow:hidden;background:#111}
+.modal-gallery{position:relative;width:100%;height:340px;overflow:hidden;background:#111}
 .modal-gallery img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
-.modal-gallery .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:1.1em;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;transition:background .2s}
-.modal-gallery .gallery-nav:hover{background:rgba(0,0,0,.7)}
-.modal-gallery .gallery-prev{left:12px}
-.modal-gallery .gallery-next{right:12px}
-.modal-gallery .gallery-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
-.modal-gallery .gallery-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;transition:background .2s}
-.modal-gallery .gallery-dots span.active{background:#fff}
-.modal-gallery .gallery-caption{position:absolute;bottom:0;left:0;right:0;padding:24px 16px 10px;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:.82em;text-align:center}
-.modal-body{padding:24px 28px}
-.modal-body h2{font-size:1.5em;margin-bottom:12px}
-.modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.modal-tags .card-tag{font-size:.85em;padding:4px 12px}
-.modal-desc{font-size:.95em;line-height:1.8;color:var(--text);margin-bottom:16px}
-.modal-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
-.modal-info-item{font-size:.9em}
-.modal-info-item .label{color:var(--text-light);margin-bottom:2px}
-.modal-info-item .value{font-weight:500}
-.no-result{text-align:center;padding:60px 20px;color:var(--text-light)}
-.no-result .icon{font-size:3em;margin-bottom:12px}
-.back-top{position:fixed;bottom:30px;right:30px;width:44px;height:44px;background:var(--primary);color:#fff;border:none;border-radius:50%;font-size:1.2em;cursor:pointer;box-shadow:0 4px 12px rgba(26,115,232,.3);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-gallery .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,253,248,.88);color:#1f2927;border:none;width:40px;height:40px;border-radius:999px;font-size:1.25em;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .2s}
+.modal-gallery .gallery-nav:hover{background:#fff;transform:translateY(-50%) scale(1.03)}
+.modal-gallery .gallery-prev{left:14px}
+.modal-gallery .gallery-next{right:14px}
+.modal-gallery .gallery-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:2}
+.modal-gallery .gallery-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.48);cursor:pointer;transition:background .2s,transform .2s}
+.modal-gallery .gallery-dots span.active{background:#fff;transform:scale(1.25)}
+.modal-gallery .gallery-caption{position:absolute;bottom:0;left:0;right:0;padding:28px 16px 10px;background:linear-gradient(transparent,rgba(0,0,0,.62));color:#fff;font-size:.82em;text-align:center}
+.modal-body{padding:28px}
+.modal-body h2{font-size:1.75em;line-height:1.25;margin-bottom:14px}
+.modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.modal-tags .card-tag{font-size:.82em;padding:5px 11px}
+.modal-desc{font-size:.98em;line-height:1.9;color:var(--text);margin-bottom:18px}
+.modal-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.modal-info-item{padding:12px;border-radius:7px;background:var(--surface-soft);font-size:.9em}
+.modal-info-item .label{color:var(--text-light);font-size:.82em;margin-bottom:3px}
+.modal-info-item .value{font-weight:800}
+.no-result{text-align:center;padding:72px 20px;color:var(--text-light);background:rgba(255,253,248,.68);border:1px dashed var(--border);border-radius:8px}
+.no-result .icon{width:52px;height:52px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,#dff3ee,#fff1d6);border:1px solid var(--border)}
+.back-top{position:fixed;bottom:28px;right:28px;width:46px;height:46px;background:var(--primary);color:#fff;border:none;border-radius:999px;font-size:1.25em;cursor:pointer;box-shadow:0 12px 28px rgba(15,118,110,.28);display:none;align-items:center;justify-content:center;z-index:100;transition:background .2s,transform .2s}
+.back-top:hover{background:var(--primary-dark);transform:translateY(-2px)}
 .back-top.show{display:flex}
-.pagination{display:flex;justify-content:center;gap:8px;margin-top:24px;flex-wrap:wrap}
-.page-btn{padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:.9em;transition:all .2s}
+.pagination{display:flex;justify-content:center;gap:8px;margin-top:28px;flex-wrap:wrap}
+.page-btn{min-width:42px;height:40px;padding:0 13px;border:1px solid var(--border);border-radius:7px;background:var(--surface);cursor:pointer;font-size:.9em;font-weight:700;color:var(--text-light);transition:background .2s,color .2s,border-color .2s}
 .page-btn:hover,.page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.page-btn:disabled{opacity:.4;cursor:default;background:#fff;color:var(--text-light)}
-.footer{text-align:center;padding:30px 20px;color:var(--text-light);font-size:.85em;margin-top:40px}
-.modal-links{margin-top:16px;padding-top:16px;border-top:1px solid #eee}
-.link-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;font-size:.9em;font-weight:500;text-decoration:none;color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);transition:transform .15s,box-shadow .15s}
-.link-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.35)}
-.link-btn.map-btn{background:linear-gradient(135deg,#10b981,#059669)}
-.link-btn.map-btn:hover{box-shadow:0 4px 12px rgba(16,185,129,.35)}
-.card-map-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:.78em;font-weight:500;text-decoration:none;color:#059669;background:#ecfdf5;border:1px solid #a7f3d0;transition:all .15s;cursor:pointer}
-.card-map-btn:hover{background:#d1fae5;border-color:#6ee7b7;transform:translateY(-1px)}
+.page-btn:disabled{opacity:.45;cursor:default;background:var(--surface);color:var(--text-light);border-color:var(--border)}
+.footer{text-align:center;padding:32px 20px;color:var(--text-light);font-size:.85em;margin-top:36px}
+.modal-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.link-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 18px;border-radius:7px;font-size:.9em;font-weight:800;text-decoration:none;color:#fff;background:var(--primary);transition:background .18s,box-shadow .18s,transform .18s}
+.link-btn:hover{background:var(--primary-dark);box-shadow:0 10px 22px rgba(15,118,110,.22);transform:translateY(-1px)}
+.link-btn.map-btn{background:var(--accent)}
+.link-btn.map-btn:hover{background:#b45309;box-shadow:0 10px 22px rgba(217,119,6,.22)}
+.card-map-btn,.card-baike-btn{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 11px;border-radius:999px;font-size:.78em;font-weight:800;text-decoration:none;transition:background .18s,border-color .18s,color .18s;cursor:pointer;white-space:nowrap}
+.card-map-btn{color:#0f5f59;background:#e5f5ef;border:1px solid #b8dcd1}
+.card-map-btn:hover{background:#d1eee4;border-color:#8ac6b6;color:#0b4a45}
+.card-baike-btn{color:#7c4a03;background:#fff4da;border:1px solid #ead09c}
+.card-baike-btn:hover{background:#fdecc2;border-color:#d8b46c;color:#623a02}
+@media(max-width:960px){
+  .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:768px){
-  .header h1{font-size:1.5em}
-  .filters{flex-direction:column}
-  .grid{grid-template-columns:1fr}
-  .stats-bar{gap:20px}
+  .header{padding:54px 18px 88px}
+  .header p{font-size:1em}
+  .container{margin-top:-50px;padding:0 16px 24px}
+  .filters{grid-template-columns:1fr;padding:14px}
+  .grid{grid-template-columns:1fr;gap:16px}
+  .card-img{height:205px}
+  .card-footer{grid-template-columns:1fr auto}
+  .modal-overlay{padding:12px}
+  .modal-img,.modal-gallery{height:260px}
+  .modal-body{padding:22px}
   .modal-info{grid-template-columns:1fr}
+  .back-top{right:18px;bottom:18px}
+}
+@media(max-width:480px){
+  .stats-bar{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-item{padding:12px}
+  .stat-num{font-size:1.35em}
+  .card-footer{font-size:.78em}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>中国5A级景区大全</h1>
-  <p>收录中华人民共和国文化和旅游部评定的全部国家5A级旅游景区</p>
-  <div class="stats-bar">
-    <div class="stat-item"><div class="stat-num" id="totalCount">0</div><div class="stat-label">景区总数</div></div>
-    <div class="stat-item"><div class="stat-num" id="provinceCount">0</div><div class="stat-label">覆盖省份</div></div>
-    <div class="stat-item"><div class="stat-num" id="categoryCount">0</div><div class="stat-label">景区类别</div></div>
-    <div class="stat-item"><div class="stat-num" id="yearSpan">0</div><div class="stat-label">评选年份跨度</div></div>
+  <div class="hero-inner">
+    <div class="eyebrow">国家 AAAAA 旅游景区索引</div>
+    <h1>中国5A级景区大全</h1>
+    <p>收录中华人民共和国文化和旅游部评定的国家5A级旅游景区，按省份、类别和入选年份快速筛选浏览。</p>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-num" id="totalCount">0</div><div class="stat-label">景区总数</div></div>
+      <div class="stat-item"><div class="stat-num" id="provinceCount">0</div><div class="stat-label">覆盖省份</div></div>
+      <div class="stat-item"><div class="stat-num" id="categoryCount">0</div><div class="stat-label">景区类别</div></div>
+      <div class="stat-item"><div class="stat-num" id="yearSpan">0</div><div class="stat-label">评选年份跨度</div></div>
+    </div>
   </div>
 </div>
 <div class="container">
@@ -127,7 +176,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
   </div>
   <div class="result-info" id="resultInfo"></div>
   <div class="grid" id="grid"></div>
-  <div class="no-result" id="noResult" style="display:none"><div class="icon">🏔️</div><p>没有找到匹配的景区</p></div>
+  <div class="no-result" id="noResult" style="display:none"><div class="icon"></div><p>没有找到匹配的景区</p></div>
   <div class="pagination" id="pagination"></div>
 </div>
 <div class="modal-overlay" id="modal">
@@ -218,7 +267,7 @@ function renderCard(spot,i){
   const imgHtml=spot.img
     ? `<img src="${spot.img}" alt="${spot.name}" loading="lazy" onerror="this.style.display='none'">`
     : '';
-  return `<div class="card" onclick="openModal(${idx})">
+  return `<div class="card" onclick="openModal(${idx})" role="button" tabindex="0" aria-label="查看${spot.name}详情" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openModal(${idx})}">
     <div class="card-img" style="background:${getImgBg(spot)}">${imgHtml}</div>
     <div class="card-badge">${spot.year}年入选</div>
     <div class="card-body">
@@ -230,9 +279,9 @@ function renderCard(spot,i){
       <div class="card-desc">${spot.desc}</div>
     </div>
     <div class="card-footer">
-      <span class="card-location">📍 ${spot.province}·${spot.city}</span>
-      <a class="card-map-btn" href="${getAmapUrl(spot)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ 地图</a>
-      <span>${spot.year}年</span>
+      <span class="card-location">${spot.province} · ${spot.city}</span>
+      <a class="card-map-btn" href="${getAmapUrl(spot)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="在高德地图打开${spot.name}">地图</a>
+      <a class="card-baike-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[spot.name]||spot.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="在百度百科打开${spot.name}">百科</a>
     </div>
   </div>`;
 }
@@ -292,8 +341,8 @@ function openModal(idx){
     <div class="modal-info-item"><div class="label">入选年份</div><div class="value">${s.year}年</div></div>
     <div class="modal-info-item"><div class="label">地理坐标</div><div class="value">${s.lat?`${s.lat}°N, ${s.lng}°E`:'—'}</div></div>
     <div class="modal-info-item"><div class="label">景区级别</div><div class="value">国家AAAAA级</div></div>`;
-  document.getElementById('modalLinks').innerHTML=`<a class="link-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[s.name]||s.name)}" target="_blank" rel="noopener">📖 百度百科</a>
-    <a class="link-btn map-btn" href="${getAmapUrl(s)}" target="_blank" rel="noopener">🗺️ 高德地图</a>`;
+  document.getElementById('modalLinks').innerHTML=`<a class="link-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[s.name]||s.name)}" target="_blank" rel="noopener">百度百科</a>
+    <a class="link-btn map-btn" href="${getAmapUrl(s)}" target="_blank" rel="noopener">高德地图</a>`;
   document.getElementById('modal').classList.add('active');
   document.body.style.overflow='hidden';
 }
