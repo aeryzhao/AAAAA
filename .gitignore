@@ -2,3 +2,4 @@ node_modules/
 .dl-progress.json
 .dl-progress.txt
 .download-progress.json
+.codex
