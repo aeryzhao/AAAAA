@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="5A scenic favicon">
+  <defs>
+    <linearGradient id="sky" x1="12" y1="6" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#134e4a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="32" y1="8" x2="48" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#fffdf8"/>
+  <rect x="5" y="5" width="54" height="54" rx="12" fill="url(#sky)"/>
+  <path d="M10 47 24 25l8 12 7-9 15 19H10Z" fill="#dff3ee"/>
+  <path d="M24 25 10 47h19l7-10-4-6-4 5-4-11Z" fill="#8fcabb"/>
+  <path d="M18 50c7-6 18-7 28 0" fill="none" stroke="#f7f5ef" stroke-width="4" stroke-linecap="round"/>
+  <path d="m43 10 2.8 6 6.5.8-4.8 4.5 1.2 6.5-5.7-3.2-5.7 3.2 1.2-6.5-4.8-4.5 6.5-.8L43 10Z" fill="url(#gold)"/>
+  <path d="M43 10v14.6l-5.7 3.2 1.2-6.5-4.8-4.5 6.5-.8L43 10Z" fill="#fcd34d" opacity=".7"/>
+</svg>
