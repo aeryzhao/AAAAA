@@ -47,6 +47,37 @@ button,a,select{cursor:pointer}
 .search-box input{padding-left:40px}
 .search-box::before{content:"";position:absolute;left:14px;bottom:14px;width:13px;height:13px;border:2px solid var(--primary);border-radius:50%;pointer-events:none}
 .search-box::after{content:"";position:absolute;left:27px;bottom:12px;width:7px;height:2px;background:var(--primary);transform:rotate(45deg);border-radius:2px;pointer-events:none}
+.view-switch{display:flex;gap:8px;margin:18px 0 0}
+.view-btn{height:40px;padding:0 15px;border:1px solid var(--border);border-radius:7px;background:rgba(255,253,248,.88);color:var(--text-light);font-weight:800;box-shadow:var(--shadow-soft);transition:background .18s,color .18s,border-color .18s,transform .18s}
+.view-btn:hover{transform:translateY(-1px);border-color:#b8ab96;color:var(--primary-dark)}
+.view-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.map-panel{display:none;margin-top:18px;background:rgba(255,253,248,.94);border:1px solid rgba(222,216,202,.86);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.map-panel.active{display:block}
+.map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid var(--border);background:rgba(240,238,229,.62)}
+.map-summary{font-size:.9em;color:var(--text-light)}
+.map-summary strong{color:var(--primary-dark)}
+.map-controls{display:flex;gap:7px}
+.map-control{width:36px;height:34px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--primary-dark);font-size:1.05em;font-weight:900;line-height:1;transition:background .18s,border-color .18s,transform .18s}
+.map-control:hover{background:#e5f5ef;border-color:#a8d5ca;transform:translateY(-1px)}
+.map-stage{position:relative;height:640px;overflow:hidden;background:linear-gradient(180deg,#eef8f5 0,#f8f3e8 100%)}
+.china-map{width:100%;height:100%;display:block;touch-action:none;user-select:none;cursor:grab}
+.china-map.dragging{cursor:grabbing}
+.map-grid{stroke:#c8d8d2;stroke-width:1;opacity:.42}
+.map-outline{fill:#e9deca;stroke:#b9a984;stroke-width:2.2;filter:drop-shadow(0 12px 18px rgba(60,54,42,.12))}
+.map-province{fill:#e9deca;stroke:#b9a984;stroke-width:1.05;vector-effect:non-scaling-stroke;transition:fill .18s,stroke .18s,opacity .18s}
+.map-province:hover{fill:#e2d4bb;stroke:#8f7c56}
+.map-province.active{fill:#dff3ee;stroke:#0f766e;stroke-width:1.8}
+.map-island{fill:#eadfcc;stroke:#b9a984;stroke-width:1.4}
+.map-label{font-size:14px;font-weight:800;fill:#8a7560;paint-order:stroke;stroke:#fffdf8;stroke-width:4px;stroke-linejoin:round}
+.map-point{fill:#d97706;stroke:#fffdf8;stroke-width:1.8;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill .14s,opacity .14s}
+.map-point:hover,.map-point:focus{fill:#0f766e;outline:none}
+.map-point.fallback{fill:#7d8f89}
+.map-point.selected{fill:#0f766e}
+.map-tooltip{position:absolute;left:0;top:0;max-width:260px;padding:10px 12px;border-radius:7px;border:1px solid rgba(222,216,202,.92);background:rgba(255,253,248,.97);box-shadow:0 12px 28px rgba(32,39,37,.16);font-size:.86em;line-height:1.55;pointer-events:none;opacity:0;transform:translate(-50%,-110%);transition:opacity .12s}
+.map-tooltip.active{opacity:1}
+.map-tooltip strong{display:block;color:var(--primary-dark);font-size:1.02em;margin-bottom:2px}
+.map-empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:18px 22px;border:1px dashed var(--border);border-radius:8px;background:rgba(255,253,248,.85);color:var(--text-light);font-weight:800;display:none}
+.map-empty.active{display:block}
 .result-info{display:flex;align-items:center;justify-content:space-between;margin:22px 0 16px;color:var(--text-light);font-size:.94em}
 .result-info strong{color:var(--primary-dark);font-size:1.1em}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
@@ -122,6 +153,9 @@ button,a,select{cursor:pointer}
   .header p{font-size:1em}
   .container{margin-top:-50px;padding:0 16px 24px}
   .filters{grid-template-columns:1fr;padding:14px}
+  .view-switch{display:grid;grid-template-columns:1fr 1fr}
+  .map-toolbar{align-items:flex-start;flex-direction:column}
+  .map-stage{height:520px}
   .grid{grid-template-columns:1fr;gap:16px}
   .card-img{height:205px}
   .card-footer{grid-template-columns:1fr auto}
@@ -175,6 +209,25 @@ button,a,select{cursor:pointer}
       <input type="text" id="searchInput" placeholder="搜索景区名称、地点...">
     </div>
   </div>
+  <div class="view-switch" role="tablist" aria-label="浏览方式">
+    <button class="view-btn active" id="listViewBtn" type="button" onclick="setView('list')" role="tab" aria-selected="true">列表</button>
+    <button class="view-btn" id="mapViewBtn" type="button" onclick="setView('map')" role="tab" aria-selected="false">地图</button>
+  </div>
+  <section class="map-panel" id="mapPanel" aria-label="景区分布地图">
+    <div class="map-toolbar">
+      <div class="map-summary" id="mapSummary">地图加载中</div>
+      <div class="map-controls" aria-label="地图缩放">
+        <button class="map-control" type="button" onclick="zoomMap(.82)" aria-label="放大">+</button>
+        <button class="map-control" type="button" onclick="zoomMap(1.22)" aria-label="缩小">−</button>
+        <button class="map-control" type="button" onclick="fitMapToFiltered()" aria-label="重置地图">⌂</button>
+      </div>
+    </div>
+    <div class="map-stage" id="mapStage">
+      <svg class="china-map" id="chinaMap" viewBox="0 0 1000 640" role="img" aria-label="中国5A级景区大致分布图"></svg>
+      <div class="map-tooltip" id="mapTooltip"></div>
+      <div class="map-empty" id="mapEmpty">没有可显示的景区</div>
+    </div>
+  </section>
   <div class="result-info" id="resultInfo"></div>
   <div class="grid" id="grid"></div>
   <div class="no-result" id="noResult" style="display:none"><div class="icon"></div><p>没有找到匹配的景区</p></div>
@@ -200,8 +253,12 @@ button,a,select{cursor:pointer}
 // --- Load local image mapping ---
 let _imgMapping={};
 let _baikeUrls={};
+let _provinceGeo=null;
+let _spotCoords={};
 fetch('images-mapping.json').then(r=>r.json()).then(d=>{_imgMapping=d;applyImgMapping();render()}).catch(()=>{});
 fetch('baike-urls.json').then(r=>r.json()).then(d=>{_baikeUrls=d}).catch(()=>{});
+fetch('data/china-provinces.json').then(r=>r.json()).then(d=>{_provinceGeo=d;if(currentView==='map')renderMap()}).catch(()=>{});
+fetch('data/spot-coordinates.json').then(r=>r.json()).then(d=>{_spotCoords=d;applySpotCoords();render()}).catch(()=>{});
 
 function applyImgMapping(){
   spots.forEach(s=>{
@@ -209,6 +266,17 @@ function applyImgMapping(){
     if(imgs&&imgs.length){
       s.imgs=imgs;
       s.img=imgs[0];
+    }
+  });
+}
+
+function applySpotCoords(){
+  spots.forEach(s=>{
+    const coord=_spotCoords[s.name];
+    if(coord&&Number.isFinite(coord.lat)&&Number.isFinite(coord.lng)){
+      s.lat=coord.lat;
+      s.lng=coord.lng;
+      s.coordSource=coord.source||'精确补全';
     }
   });
 }
@@ -226,6 +294,14 @@ const grid=document.getElementById('grid');
 const resultInfo=document.getElementById('resultInfo');
 const noResult=document.getElementById('noResult');
 const paginationEl=document.getElementById('pagination');
+const listViewBtn=document.getElementById('listViewBtn');
+const mapViewBtn=document.getElementById('mapViewBtn');
+const mapPanel=document.getElementById('mapPanel');
+const mapStage=document.getElementById('mapStage');
+const chinaMap=document.getElementById('chinaMap');
+const mapTooltip=document.getElementById('mapTooltip');
+const mapSummary=document.getElementById('mapSummary');
+const mapEmpty=document.getElementById('mapEmpty');
 
 provinces.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;filterProvince.appendChild(o)});
 categories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;filterCategory.appendChild(o)});
@@ -238,6 +314,287 @@ document.getElementById('yearSpan').textContent=years[years.length-1]+'-'+years[
 
 const ITEMS_PER_PAGE=20;
 let currentPage=1;
+let currentView='list';
+
+const MAP_BASE_VIEW={x:0,y:0,w:1000,h:640};
+let mapView={...MAP_BASE_VIEW};
+let mapDragging=false;
+let mapDragStart=null;
+const MAP_NS='http://www.w3.org/2000/svg';
+
+const provinceCenters={
+  北京:[116.4,39.9],天津:[117.2,39.1],河北:[114.5,38.0],山西:[112.55,37.87],内蒙古:[111.75,40.84],
+  辽宁:[123.43,41.8],吉林:[125.32,43.9],黑龙江:[126.64,45.75],上海:[121.47,31.23],江苏:[118.78,32.04],
+  浙江:[120.15,30.27],安徽:[117.28,31.86],福建:[119.3,26.08],江西:[115.86,28.68],山东:[117.0,36.65],
+  河南:[113.62,34.75],湖北:[114.3,30.6],湖南:[112.98,28.2],广东:[113.27,23.13],广西:[108.32,22.82],
+  海南:[110.35,20.02],重庆:[106.55,29.56],四川:[104.06,30.67],贵州:[106.63,26.65],云南:[102.71,25.04],
+  西藏:[91.13,29.65],陕西:[108.94,34.34],甘肃:[103.82,36.06],青海:[101.78,36.62],宁夏:[106.27,38.47],
+  新疆:[87.62,43.82],香港:[114.17,22.32],澳门:[113.54,22.2],台湾:[121.0,23.7]
+};
+
+const cityCenters={
+  '北京|通州':[116.66,39.91],'天津|天津':[117.2,39.12],'河北|承德':[117.94,40.98],'河北|衡水':[115.67,37.74],
+  '山西|长治':[113.12,36.2],'山西|太原':[112.55,37.87],'内蒙古|呼伦贝尔':[119.77,49.22],'内蒙古|兴安盟':[122.04,46.08],
+  '内蒙古|赤峰':[118.89,42.26],'内蒙古|呼和浩特':[111.75,40.84],'辽宁|大连':[121.61,38.91],'辽宁|盘锦':[122.07,41.12],
+  '吉林|通化':[125.94,41.73],'吉林|松原':[124.82,45.14],'吉林|白城':[122.84,45.62],'黑龙江|伊春':[128.84,47.73],
+  '黑龙江|漠河':[122.54,52.97],'黑龙江|鸡西':[130.97,45.3],'黑龙江|齐齐哈尔':[123.92,47.35],'江苏|泰州':[119.92,32.46],
+  '江苏|淮安':[119.02,33.61],'江苏|盐城':[120.16,33.35],'江苏|徐州':[117.18,34.26],'江苏|宿迁':[118.28,33.96],
+  '浙江|衢州':[118.87,28.94],'安徽|黄山':[118.34,29.71],'安徽|安庆':[117.05,30.53],'安徽|滁州':[118.32,32.3],
+  '福建|三明':[117.64,26.27],'福建|莆田':[119.0,25.45],'江西|南昌':[115.86,28.68],'江西|萍乡':[113.85,27.62],
+  '山东|东营':[118.67,37.43],'山东|淄博':[118.05,36.81],'河南|郑州':[113.62,34.75],'河南|平顶山':[113.19,33.77],
+  '河南|南阳':[112.53,32.99],'河南|驻马店':[114.02,33.01],'河南|商丘':[115.65,34.44],'河南|周口':[114.65,33.62],
+  '湖北|咸宁':[114.32,29.84],'湖北|襄阳':[112.12,32.01],'湖北|荆门':[112.2,31.04],'湖北|黄冈':[114.87,30.45],
+  '湖南|岳阳':[113.13,29.36],'湖南|株洲':[113.13,27.83],'湖南|常德':[111.69,29.04],'广东|江门':[113.08,22.58],
+  '广东|河源':[114.7,23.74],'广西|北海':[109.12,21.48],'广西|贺州':[111.57,24.4],'广西|柳州':[109.42,24.33],
+  '重庆|大足':[105.72,29.7],'重庆|巫山':[109.88,31.08],'重庆|武隆':[107.76,29.33],'重庆|酉阳':[108.77,28.84],
+  '重庆|万盛':[106.93,28.96],'重庆|南川':[107.1,29.16],'重庆|江津':[106.26,29.29],'重庆|云阳':[108.7,30.93],
+  '重庆|彭水':[108.17,29.29],'重庆|黔江':[108.77,29.53],'重庆|奉节':[109.47,31.02],'重庆|涪陵':[107.39,29.7],
+  '四川|南充':[106.08,30.79],'四川|广元':[105.84,32.44],'四川|雅安':[103.0,29.98],'四川|巴中':[106.75,31.86],
+  '贵州|黔西南':[104.9,25.09],'云南|西双版纳':[100.8,22.0],'云南|保山':[99.17,25.12],'西藏|日喀则':[88.88,29.27],
+  '陕西|咸阳':[108.7,34.33],'甘肃|嘉峪关':[98.29,39.77],'甘肃|天水':[105.72,34.58],'甘肃|陇南':[104.92,33.4],
+  '甘肃|甘南':[102.91,34.99],'宁夏|吴忠':[106.2,37.99],'新疆|昌吉':[87.31,44.01],'新疆|吐鲁番':[89.19,42.95],
+  '新疆|伊犁':[81.32,43.92],'新疆|乌鲁木齐':[87.62,43.82],'新疆|克拉玛依':[84.89,45.58],'新疆|博州':[82.07,44.9]
+};
+
+const cityAverages=spots.reduce((acc,s)=>{
+  if(Number.isFinite(s.lat)&&Number.isFinite(s.lng)){
+    const key=s.province+'|'+s.city;
+    acc[key]=acc[key]||{lng:0,lat:0,count:0};
+    acc[key].lng+=s.lng;acc[key].lat+=s.lat;acc[key].count++;
+  }
+  return acc;
+},{});
+
+function projectCoord(lng,lat){
+  const x=(lng-73.2)/(135.2-73.2)*1000;
+  const y=(53.8-lat)/(53.8-18.0)*640;
+  return {x,y};
+}
+
+function hashNum(text){
+  let h=0;
+  for(let i=0;i<text.length;i++)h=(h*31+text.charCodeAt(i))>>>0;
+  return h;
+}
+
+function getSpotCoord(spot){
+  if(Number.isFinite(spot.lat)&&Number.isFinite(spot.lng))return {lng:spot.lng,lat:spot.lat,source:spot.coordSource||'精确坐标',estimated:false};
+  const key=spot.province+'|'+spot.city;
+  if(cityAverages[key])return {lng:cityAverages[key].lng/cityAverages[key].count,lat:cityAverages[key].lat/cityAverages[key].count,source:'同城估算',estimated:true};
+  if(cityCenters[key])return {lng:cityCenters[key][0],lat:cityCenters[key][1],source:'城市中心',estimated:true};
+  const pv=provinceCenters[spot.province]||[104,35];
+  return {lng:pv[0],lat:pv[1],source:'省份中心',estimated:true};
+}
+
+function getMapPoint(spot){
+  const coord=getSpotCoord(spot);
+  const h=hashNum(spot.name+spot.city);
+  const radius=coord.estimated?4.5+(h%4):1.6;
+  const angle=(h%360)*Math.PI/180;
+  const p=projectCoord(coord.lng,coord.lat);
+  return {
+    x:p.x+Math.cos(angle)*radius,
+    y:p.y+Math.sin(angle)*radius,
+    source:coord.source,
+    estimated:coord.estimated
+  };
+}
+
+function setView(view){
+  currentView=view;
+  const isMap=view==='map';
+  listViewBtn.classList.toggle('active',!isMap);
+  mapViewBtn.classList.toggle('active',isMap);
+  listViewBtn.setAttribute('aria-selected',String(!isMap));
+  mapViewBtn.setAttribute('aria-selected',String(isMap));
+  mapPanel.classList.toggle('active',isMap);
+  render();
+  if(isMap)requestAnimationFrame(fitMapToFiltered);
+}
+
+function setMapViewBox(next){
+  const maxW=1000,maxH=640;
+  const w=Math.max(120,Math.min(maxW,next.w));
+  const h=Math.max(90,Math.min(maxH,next.h));
+  const x=Math.max(0,Math.min(maxW-w,next.x));
+  const y=Math.max(0,Math.min(maxH-h,next.y));
+  mapView={x,y,w,h};
+  chinaMap.setAttribute('viewBox',`${x} ${y} ${w} ${h}`);
+  updateMapPointSizes();
+}
+
+function zoomMap(factor,center){
+  center=center||{x:mapView.x+mapView.w/2,y:mapView.y+mapView.h/2};
+  const nw=mapView.w*factor,nh=mapView.h*factor;
+  setMapViewBox({
+    x:center.x-(center.x-mapView.x)*(nw/mapView.w),
+    y:center.y-(center.y-mapView.y)*(nh/mapView.h),
+    w:nw,h:nh
+  });
+}
+
+function updateMapPointSizes(){
+  if(!chinaMap)return;
+  const pointScale=Math.max(mapView.w/1000,mapView.h/640);
+  chinaMap.querySelectorAll('.map-point').forEach(point=>{
+    const base=point.classList.contains('fallback')?4.9:4.4;
+    point.setAttribute('r',Math.max(1.6,base*pointScale).toFixed(2));
+  });
+}
+
+function fitMapToFiltered(){
+  const points=getFiltered().map(getMapPoint);
+  if(!points.length){setMapViewBox(MAP_BASE_VIEW);return}
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const pad=filterProvince.value?55:35;
+  const w=Math.max(180,maxX-minX+pad*2);
+  const h=Math.max(140,maxY-minY+pad*2);
+  setMapViewBox({x:minX-pad,y:minY-pad,w,h});
+}
+
+function svgEl(tag,attrs){
+  const el=document.createElementNS(MAP_NS,tag);
+  Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+
+function normalizeProvinceName(name){
+  return name
+    .replace(/特别行政区$/,'')
+    .replace(/维吾尔自治区$/,'')
+    .replace(/壮族自治区$/,'')
+    .replace(/回族自治区$/,'')
+    .replace(/自治区$/,'')
+    .replace(/[省市]$/,'');
+}
+
+function ringToPath(ring){
+  return ring.map(([lng,lat],i)=>{
+    const p=projectCoord(lng,lat);
+    return `${i?'L':'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+  }).join(' ')+' Z';
+}
+
+function geometryToPath(geometry){
+  const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
+  return polygons.map(poly=>poly.map(ringToPath).join(' ')).join(' ');
+}
+
+function renderProvinceBoundaries(){
+  if(!_provinceGeo)return false;
+  const selected=filterProvince.value;
+  const group=svgEl('g');
+  _provinceGeo.features.forEach(feature=>{
+    const name=normalizeProvinceName(feature.properties.name);
+    const path=svgEl('path',{
+      d:geometryToPath(feature.geometry),
+      'class':'map-province '+(selected&&selected===name?'active':''),
+      'data-province':name,
+      'fill-rule':'evenodd'
+    });
+    group.appendChild(path);
+  });
+  chinaMap.appendChild(group);
+
+  if(selected)return true;
+  _provinceGeo.features.forEach(feature=>{
+    const name=normalizeProvinceName(feature.properties.name);
+    if(!provinces.includes(name)&&!['台湾'].includes(name))return;
+    const center=feature.properties.centroid||feature.properties.center;
+    if(!center)return;
+    const p=projectCoord(center[0],center[1]);
+    const t=svgEl('text',{'class':'map-label',x:p.x,y:p.y,'text-anchor':'middle'});
+    t.textContent=name;
+    chinaMap.appendChild(t);
+  });
+  return true;
+}
+
+function renderFallbackMapOutline(){
+  const mainland=[[73.5,39.5],[76,42.5],[82,45.5],[88,48.2],[96,49.2],[104,48.5],[111,49.2],[119,50.3],[126,49.2],[132,47.5],[134,44.5],[131,42.2],[125,40.2],[122,38.8],[121,36.8],[123,34.6],[121,31.0],[119,28.5],[121,25.2],[118,23.0],[114,22.2],[110,20.3],[106,21.8],[102,22.0],[98,24.0],[97,27.5],[92,28.4],[88,29.8],[84,31.2],[80,33.0],[78,35.4],[74.8,36.8]];
+  const outline=mainland.map(([lng,lat])=>{const p=projectCoord(lng,lat);return `${p.x.toFixed(1)},${p.y.toFixed(1)}`}).join(' ');
+  chinaMap.appendChild(svgEl('polygon',{'class':'map-outline',points:outline}));
+  [[110.2,19.2,28],[121,23.7,34],[114.17,22.32,8],[113.54,22.2,6]].forEach(([lng,lat,r])=>{
+    const p=projectCoord(lng,lat);
+    chinaMap.appendChild(svgEl('circle',{'class':'map-island',cx:p.x,cy:p.y,r}));
+  });
+
+  const labels=[['新疆',87.6,43.8],['西藏',91.1,31.2],['青海',97.3,35.6],['四川',103.8,30.7],['云南',101.8,25.1],['内蒙古',112.5,43.5],['东北',126.2,45.6],['华北',116.2,38.4],['华东',119.5,31.2],['华南',113.8,23.2]];
+  labels.forEach(([text,lng,lat])=>{
+    const p=projectCoord(lng,lat);
+    const t=svgEl('text',{'class':'map-label',x:p.x,y:p.y,'text-anchor':'middle'});
+    t.textContent=text;
+    chinaMap.appendChild(t);
+  });
+}
+
+function renderMap(){
+  const filtered=getFiltered();
+  const visible=filtered.map(s=>({spot:s,idx:spots.indexOf(s),point:getMapPoint(s)}));
+  chinaMap.innerHTML='';
+
+  const defs=svgEl('defs');
+  const grid=svgEl('g',{'class':'map-grid'});
+  for(let x=100;x<1000;x+=100)grid.appendChild(svgEl('line',{x1:x,y1:0,x2:x,y2:640}));
+  for(let y=80;y<640;y+=80)grid.appendChild(svgEl('line',{x1:0,y1:y,x2:1000,y2:y}));
+  chinaMap.appendChild(defs);
+  chinaMap.appendChild(grid);
+
+  if(!renderProvinceBoundaries())renderFallbackMapOutline();
+
+  const pointGroup=svgEl('g');
+  const pointScale=Math.max(mapView.w/1000,mapView.h/640);
+  visible.forEach(({spot,idx,point})=>{
+    const radius=(point.estimated?4.9:4.4)*pointScale;
+    const circle=svgEl('circle',{
+      'class':'map-point '+(point.estimated?'fallback':''),
+      cx:point.x.toFixed(2),
+      cy:point.y.toFixed(2),
+      r:Math.max(1.6,radius).toFixed(2),
+      tabindex:0,
+      role:'button',
+      'aria-label':spot.name
+    });
+    circle.addEventListener('mouseenter',e=>showMapTooltip(e,spot,point.source));
+    circle.addEventListener('mousemove',e=>moveMapTooltip(e));
+    circle.addEventListener('mouseleave',hideMapTooltip);
+    circle.addEventListener('focus',e=>showMapTooltip(e,spot,point.source));
+    circle.addEventListener('blur',hideMapTooltip);
+    circle.addEventListener('click',e=>{e.stopPropagation();openModal(idx)});
+    circle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModal(idx)}});
+    pointGroup.appendChild(circle);
+  });
+  chinaMap.appendChild(pointGroup);
+
+  const fallbackCount=visible.filter(v=>v.point.estimated).length;
+  mapSummary.innerHTML=`显示 <strong>${visible.length}</strong> 个景区点位`+(fallbackCount?`，其中 <strong>${fallbackCount}</strong> 个为城市/省份估算位置`:'');
+  mapEmpty.classList.toggle('active',visible.length===0);
+}
+
+function showMapTooltip(event,spot,source){
+  mapTooltip.innerHTML=`<strong>${spot.name}</strong>${spot.province} · ${spot.city}<br>${spot.category} · ${spot.year}年入选<br>位置：${source}`;
+  mapTooltip.classList.add('active');
+  moveMapTooltip(event);
+}
+
+function moveMapTooltip(event){
+  const rect=mapStage.getBoundingClientRect();
+  const clientX=event.clientX||(event.touches&&event.touches[0].clientX)||rect.left+rect.width/2;
+  const clientY=event.clientY||(event.touches&&event.touches[0].clientY)||rect.top+rect.height/2;
+  mapTooltip.style.left=(clientX-rect.left)+'px';
+  mapTooltip.style.top=(clientY-rect.top)+'px';
+}
+
+function hideMapTooltip(){mapTooltip.classList.remove('active')}
+
+function mapClientToSvg(event){
+  const rect=chinaMap.getBoundingClientRect();
+  return {
+    x:mapView.x+(event.clientX-rect.left)/rect.width*mapView.w,
+    y:mapView.y+(event.clientY-rect.top)/rect.height*mapView.h
+  };
+}
 
 function getFiltered(){
   const pv=filterProvince.value,ct=filterCategory.value,yr=filterYear.value,sw=searchInput.value.trim().toLowerCase();
@@ -293,10 +650,13 @@ function render(){
   if(currentPage>totalPages)currentPage=1;
   const start=(currentPage-1)*ITEMS_PER_PAGE;
   const pageItems=filtered.slice(start,start+ITEMS_PER_PAGE);
+  const isList=currentView==='list';
 
   resultInfo.innerHTML=`共找到 <strong>${filtered.length}</strong> 个景区`+(totalPages>1?`，第 ${currentPage}/${totalPages} 页`:'');
   grid.innerHTML=pageItems.map(renderCard).join('');
-  noResult.style.display=filtered.length?'none':'block';
+  resultInfo.style.display=isList?'flex':'none';
+  grid.style.display=isList?'grid':'none';
+  noResult.style.display=isList&&!filtered.length?'block':'none';
 
   let pg='';
   if(totalPages>1){
@@ -311,6 +671,8 @@ function render(){
     pg+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>下一页</button>`;
   }
   paginationEl.innerHTML=pg;
+  paginationEl.style.display=isList?'flex':'none';
+  if(currentView==='map')renderMap();
 }
 
 function goPage(p){currentPage=p;render();window.scrollTo({top:300,behavior:'smooth'})}
@@ -378,10 +740,48 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 let timer;function debounce(fn,delay){return function(){clearTimeout(timer);timer=setTimeout(fn,delay)}}
 
-filterProvince.addEventListener('change',()=>{currentPage=1;render()});
-filterCategory.addEventListener('change',()=>{currentPage=1;render()});
-filterYear.addEventListener('change',()=>{currentPage=1;render()});
-searchInput.addEventListener('input',debounce(()=>{currentPage=1;render()},300));
+function onFiltersChanged(){
+  currentPage=1;
+  render();
+  if(currentView==='map')requestAnimationFrame(fitMapToFiltered);
+}
+
+filterProvince.addEventListener('change',onFiltersChanged);
+filterCategory.addEventListener('change',onFiltersChanged);
+filterYear.addEventListener('change',onFiltersChanged);
+searchInput.addEventListener('input',debounce(onFiltersChanged,300));
+
+setMapViewBox(MAP_BASE_VIEW);
+chinaMap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const center=mapClientToSvg(e);
+  zoomMap(e.deltaY < 0 ? .86 : 1.16,center);
+},{passive:false});
+chinaMap.addEventListener('pointerdown',e=>{
+  if(e.target.classList.contains('map-point'))return;
+  mapDragging=true;
+  chinaMap.classList.add('dragging');
+  chinaMap.setPointerCapture(e.pointerId);
+  mapDragStart={clientX:e.clientX,clientY:e.clientY,view:{...mapView}};
+});
+chinaMap.addEventListener('pointermove',e=>{
+  if(!mapDragging||!mapDragStart)return;
+  const rect=chinaMap.getBoundingClientRect();
+  const dx=(e.clientX-mapDragStart.clientX)/rect.width*mapDragStart.view.w;
+  const dy=(e.clientY-mapDragStart.clientY)/rect.height*mapDragStart.view.h;
+  setMapViewBox({...mapDragStart.view,x:mapDragStart.view.x-dx,y:mapDragStart.view.y-dy});
+});
+chinaMap.addEventListener('pointerup',e=>{
+  mapDragging=false;
+  mapDragStart=null;
+  chinaMap.classList.remove('dragging');
+  if(chinaMap.hasPointerCapture(e.pointerId))chinaMap.releasePointerCapture(e.pointerId);
+});
+chinaMap.addEventListener('pointercancel',()=>{
+  mapDragging=false;
+  mapDragStart=null;
+  chinaMap.classList.remove('dragging');
+});
 
 window.addEventListener('scroll',()=>{document.getElementById('backTop').classList.toggle('show',window.scrollY>400)});
 
