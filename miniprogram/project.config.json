@@ -1,5 +1,5 @@
 {
-  "description": "中国5A级景区大全 - 微信小程序版",
+  "description": "收录全国国家5A级旅游景区，支持按省份、类别、入选年份筛选，查看景区简介、地图位置和百科信息。",
   "packOptions": {
     "ignore": [],
     "include": []
