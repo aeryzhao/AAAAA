@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/map/map"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#0f766e",
+    "navigationBarTitleText": "5A景区大全",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f7f5ef",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#65736f",
+    "selectedColor": "#0f766e",
+    "backgroundColor": "#fffdf8",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "列表",
+        "iconPath": "assets/tab-list.png",
+        "selectedIconPath": "assets/tab-list-active.png"
+      },
+      {
+        "pagePath": "pages/map/map",
+        "text": "地图",
+        "iconPath": "assets/tab-map.png",
+        "selectedIconPath": "assets/tab-map-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -118,7 +118,8 @@
       "Bash(git push *)",
       "Bash(lark-cli contact *)",
       "Bash(lark-cli auth *)",
-      "Bash(lark-cli im *)"
+      "Bash(lark-cli im *)",
+      "Bash(curl -s http://localhost:8080)"
     ]
   }
 }

@@ -1,0 +1,47 @@
+<!--pages/map/map.wxml-->
+<view class="page">
+  <!-- 筛选栏 -->
+  <view class="map-filters">
+    <view class="filter-scroll">
+      <view class="filter-item">
+        <picker bindchange="onProvinceChange" value="{{provinceIndex}}" range="{{provinceOptions}}">
+          <view class="picker-btn {{provinceIndex > 0 ? 'active' : ''}}">
+            {{provinceOptions[provinceIndex]}}
+            <text class="picker-arrow">▾</text>
+          </view>
+        </picker>
+      </view>
+      <view class="filter-item">
+        <picker bindchange="onCategoryChange" value="{{categoryIndex}}" range="{{categoryOptions}}">
+          <view class="picker-btn {{categoryIndex > 0 ? 'active' : ''}}">
+            {{categoryOptions[categoryIndex]}}
+            <text class="picker-arrow">▾</text>
+          </view>
+        </picker>
+      </view>
+      <view class="filter-item fit-btn" bindtap="fitToFiltered">
+        <text>📍 定位筛选</text>
+      </view>
+    </view>
+    <view class="filter-stats">
+      显示 <text class="stats-num">{{markerCount}}</text> 个景区
+    </view>
+  </view>
+
+  <!-- 地图 -->
+  <map
+    id="scenicMap"
+    class="scenic-map"
+    latitude="{{centerLat}}"
+    longitude="{{centerLng}}"
+    scale="{{scale}}"
+    markers="{{markers}}"
+    show-location="{{false}}"
+    enable-zoom="{{true}}"
+    enable-scroll="{{true}}"
+    enable-rotate="{{false}}"
+    bindmarkertap="onMarkerTap"
+    bindlabeltap="onLabelTap"
+    bindregionchange="onRegionChange"
+  ></map>
+</view>

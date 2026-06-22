@@ -1,0 +1,103 @@
+<!--pages/index/index.wxml-->
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索景区名称、城市、描述..."
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <!-- 筛选器 -->
+  <view class="filters">
+    <view class="filter-item">
+      <picker bindchange="onProvinceChange" value="{{provinceIndex}}" range="{{provinceOptions}}">
+        <view class="picker-btn {{provinceIndex > 0 ? 'active' : ''}}">
+          {{provinceOptions[provinceIndex]}}
+          <text class="picker-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+    <view class="filter-item">
+      <picker bindchange="onCategoryChange" value="{{categoryIndex}}" range="{{categoryOptions}}">
+        <view class="picker-btn {{categoryIndex > 0 ? 'active' : ''}}">
+          {{categoryOptions[categoryIndex]}}
+          <text class="picker-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+    <view class="filter-item">
+      <picker bindchange="onYearChange" value="{{yearIndex}}" range="{{yearOptions}}">
+        <view class="picker-btn {{yearIndex > 0 ? 'active' : ''}}">
+          {{yearOptions[yearIndex]}}
+          <text class="picker-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats">
+    <text class="stats-text">共 <text class="stats-num">{{filteredCount}}</text> 个景区</text>
+    <text class="stats-hint" wx:if="{{hasFilter}}">（已筛选）</text>
+  </view>
+
+  <!-- 景区列表 -->
+  <view class="list" wx:if="{{displayList.length > 0}}">
+    <view
+      class="card"
+      wx:for="{{displayList}}"
+      wx:key="index"
+      bindtap="goDetail"
+      data-index="{{item.originalIndex}}"
+    >
+      <!-- 年份标签 -->
+      <view class="card-year">{{item.year}}年入选</view>
+
+      <view class="card-body">
+        <view class="card-title">{{item.name}}</view>
+        <view class="card-tags">
+          <text class="tag tag-province">{{item.province}}</text>
+          <text class="tag tag-category">{{item.category}}</text>
+        </view>
+        <view class="card-desc">{{item.desc}}</view>
+      </view>
+
+      <view class="card-footer">
+        <text class="card-location">📍 {{item.city}}</text>
+        <view class="card-actions">
+          <view class="btn-action" catchtap="openMap" data-index="{{item.originalIndex}}">
+            <text>🗺️ 地图</text>
+          </view>
+          <view class="btn-action" catchtap="openBaike" data-index="{{item.originalIndex}}">
+            <text>📖 百科</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{filteredCount === 0}}">
+    <text class="empty-icon">🏔️</text>
+    <text class="empty-text">没有找到匹配的景区</text>
+  </view>
+
+  <!-- 分页 -->
+  <view class="pagination" wx:if="{{totalPages > 1}}">
+    <view class="page-btn {{currentPage <= 1 ? 'disabled' : ''}}" bindtap="goPrevPage">
+      <text>‹ 上一页</text>
+    </view>
+    <view class="page-info">{{currentPage}} / {{totalPages}}</view>
+    <view class="page-btn {{currentPage >= totalPages ? 'disabled' : ''}}" bindtap="goNextPage">
+      <text>下一页 ›</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,62 @@
+/* 全局样式 */
+page {
+  --primary: #0f766e;
+  --primary-dark: #134e4a;
+  --accent: #d97706;
+  --bg: #f7f5ef;
+  --surface: #fffdf8;
+  --surface-soft: #f0eee5;
+  --text: #17211f;
+  --text-light: #65736f;
+  --muted: #8a7560;
+  --border: #ded8ca;
+  --ring: rgba(15,118,110,.22);
+  --shadow: 0 4rpx 16rpx rgba(32,39,37,.08);
+
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-size: 28rpx;
+  line-height: 1.65;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.tag-province {
+  background: rgba(15, 118, 110, .1);
+  color: var(--primary);
+}
+
+.tag-category {
+  background: rgba(217, 119, 6, .1);
+  color: var(--accent);
+}
+
+.tag-year {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  color: var(--muted);
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+}

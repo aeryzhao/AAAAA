@@ -3,3 +3,4 @@ node_modules/
 .dl-progress.txt
 .download-progress.json
 .codex
+.claude
