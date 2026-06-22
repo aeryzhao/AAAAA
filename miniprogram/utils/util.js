@@ -1,22 +1,13 @@
 // 工具函数
 
 /**
- * 获取景点坐标，带多级回退
+ * 获取景点坐标，统一使用景区数据中的坐标
  */
 function getSpotLatLng(spot, cityAverages, cityCenters, provinceCenters) {
   if (isFinite(spot.lat) && isFinite(spot.lng)) {
-    return { lng: spot.lng, lat: spot.lat, source: '精确坐标', estimated: false }
+    return { lng: spot.lng, lat: spot.lat, source: spot.coordSource || '坐标文件', estimated: false }
   }
-  const key = spot.province + '|' + spot.city
-  if (cityAverages[key]) {
-    const avg = cityAverages[key]
-    return { lng: avg.lng / avg.count, lat: avg.lat / avg.count, source: '同城估算', estimated: true }
-  }
-  if (cityCenters[key]) {
-    return { lng: cityCenters[key][0], lat: cityCenters[key][1], source: '城市中心', estimated: true }
-  }
-  const pv = provinceCenters[spot.province] || [104, 35]
-  return { lng: pv[0], lat: pv[1], source: '省份中心', estimated: true }
+  return null
 }
 
 /**
@@ -60,6 +51,7 @@ function getSpotsBounds(spots, cityAverages, cityCenters, provinceCenters) {
   let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180
   spots.forEach(spot => {
     const coord = getSpotLatLng(spot, cityAverages, cityCenters, provinceCenters)
+    if (!coord) return
     if (coord.lat < minLat) minLat = coord.lat
     if (coord.lat > maxLat) maxLat = coord.lat
     if (coord.lng < minLng) minLng = coord.lng

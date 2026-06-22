@@ -69,8 +69,10 @@ button,a,select{cursor:pointer}
 .map-province.active{fill:#dff3ee;stroke:#0f766e;stroke-width:1.8}
 .map-island{fill:#eadfcc;stroke:#b9a984;stroke-width:1.4}
 .map-label{font-size:14px;font-weight:800;fill:#8a7560;paint-order:stroke;stroke:#fffdf8;stroke-width:4px;stroke-linejoin:round}
+.map-spot-label{font-size:10.5px;font-weight:800;fill:#23302d;paint-order:stroke;stroke:#fffdf8;stroke-width:3px;stroke-linejoin:round;pointer-events:auto;cursor:pointer;transition:fill .14s}
+.map-spot-label:hover,.map-spot-label:focus{fill:#0f766e;outline:none}
 .map-point{fill:#d97706;stroke:#fffdf8;stroke-width:1.8;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill .14s,opacity .14s}
-.map-point:hover,.map-point:focus{fill:#0f766e;outline:none}
+.map-point:hover,.map-point:focus,.map-point.hovered{fill:#0f766e;outline:none}
 .map-point.fallback{fill:#7d8f89}
 .map-point.selected{fill:#0f766e}
 .map-tooltip{position:absolute;left:0;top:0;max-width:260px;padding:10px 12px;border-radius:7px;border:1px solid rgba(222,216,202,.92);background:rgba(255,253,248,.97);box-shadow:0 12px 28px rgba(32,39,37,.16);font-size:.86em;line-height:1.55;pointer-events:none;opacity:0;transform:translate(-50%,-110%);transition:opacity .12s}
@@ -78,9 +80,7 @@ button,a,select{cursor:pointer}
 .map-tooltip strong{display:block;color:var(--primary-dark);font-size:1.02em;margin-bottom:2px}
 .map-empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:18px 22px;border:1px dashed var(--border);border-radius:8px;background:rgba(255,253,248,.85);color:var(--text-light);font-weight:800;display:none}
 .map-empty.active{display:block}
-.result-info{display:flex;align-items:center;justify-content:space-between;margin:22px 0 16px;color:var(--text-light);font-size:.94em}
-.result-info strong{color:var(--primary-dark);font-size:1.1em}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;margin-top:22px}
 .card{background:var(--surface);border:1px solid rgba(222,216,202,.86);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-soft);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;cursor:pointer;position:relative;display:flex;flex-direction:column;height:100%}
 .card:hover{transform:translateY(-4px);box-shadow:0 22px 50px rgba(32,39,37,.14);border-color:#b9aa8f}
 .card-img{height:210px;background-size:cover;background-position:center;position:relative;overflow:hidden}
@@ -156,7 +156,7 @@ button,a,select{cursor:pointer}
   .view-switch{display:grid;grid-template-columns:1fr 1fr}
   .map-toolbar{align-items:flex-start;flex-direction:column}
   .map-stage{height:520px}
-  .grid{grid-template-columns:1fr;gap:16px}
+  .grid{grid-template-columns:1fr;gap:16px;margin-top:18px}
   .card-img{height:205px}
   .card-footer{grid-template-columns:1fr auto}
   .modal-overlay{padding:12px}
@@ -228,7 +228,6 @@ button,a,select{cursor:pointer}
       <div class="map-empty" id="mapEmpty">没有可显示的景区</div>
     </div>
   </section>
-  <div class="result-info" id="resultInfo"></div>
   <div class="grid" id="grid"></div>
   <div class="no-result" id="noResult" style="display:none"><div class="icon"></div><p>没有找到匹配的景区</p></div>
   <div class="pagination" id="pagination"></div>
@@ -254,11 +253,39 @@ button,a,select{cursor:pointer}
 let _imgMapping={};
 let _baikeUrls={};
 let _provinceGeo=null;
-let _spotCoords={};
+let spots=[];
+let categories=[];
+let provinces=[];
+let years=[];
+
+fetch('data/spots.json').then(r=>r.json()).then(d=>initializeSpotData(d)).catch(err=>{console.error('景区数据加载失败',err);render()});
 fetch('images-mapping.json').then(r=>r.json()).then(d=>{_imgMapping=d;applyImgMapping();render()}).catch(()=>{});
 fetch('baike-urls.json').then(r=>r.json()).then(d=>{_baikeUrls=d}).catch(()=>{});
 fetch('data/china-provinces.json').then(r=>r.json()).then(d=>{_provinceGeo=d;if(currentView==='map')renderMap()}).catch(()=>{});
-fetch('data/spot-coordinates.json').then(r=>r.json()).then(d=>{_spotCoords=d;applySpotCoords();render()}).catch(()=>{});
+
+function initializeSpotData(data){
+  spots=Array.isArray(data)?data:[];
+  categories=[...new Set(spots.map(s=>s.category))].sort();
+  provinces=[...new Set(spots.map(s=>s.province))].sort();
+  years=[...new Set(spots.map(s=>s.year))].sort((a,b)=>b-a);
+  populateFilterOptions();
+  document.getElementById('totalCount').textContent=spots.length;
+  document.getElementById('provinceCount').textContent=provinces.length;
+  document.getElementById('categoryCount').textContent=categories.length;
+  document.getElementById('yearSpan').textContent=years.length?years[years.length-1]+'-'+years[0]:'-';
+  applyImgMapping();
+  currentPage=1;
+  render();
+}
+
+function populateFilterOptions(){
+  filterProvince.innerHTML='<option value="">全部省份</option>';
+  filterCategory.innerHTML='<option value="">全部类别</option>';
+  filterYear.innerHTML='<option value="">全部年份</option>';
+  provinces.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;filterProvince.appendChild(o)});
+  categories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;filterCategory.appendChild(o)});
+  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'年';filterYear.appendChild(o)});
+}
 
 function applyImgMapping(){
   spots.forEach(s=>{
@@ -270,28 +297,22 @@ function applyImgMapping(){
   });
 }
 
-function applySpotCoords(){
-  spots.forEach(s=>{
-    const coord=_spotCoords[s.name];
-    if(coord&&Number.isFinite(coord.lat)&&Number.isFinite(coord.lng)){
-      s.lat=coord.lat;
-      s.lng=coord.lng;
-      s.coordSource=coord.source||'精确补全';
-    }
-  });
+function getCanonicalCoord(spot){
+  if(spot&&Number.isFinite(spot.lat)&&Number.isFinite(spot.lng)){
+    return {
+      lat:spot.lat,
+      lng:spot.lng,
+      source:spot.coordSource||'景区数据'
+    };
+  }
+  return null;
 }
-
-const spots=[{name: "故宫博物院", province: "北京", city: "北京", year: 2007, category: "文化遗产", desc: "世界上现存规模最大、保存最为完整的木质结构古建筑群，是明清两代皇家宫殿，旧称紫禁城。占地面积约72万平方米，建筑面积约15万平方米，有大小宫殿七十多座，房屋九千余间。", lat: 39.916, lng: 116.397}, {name: "天坛公园", province: "北京", city: "北京", year: 2007, category: "文化遗产", desc: "明清两代帝王祭天、祈谷的场所，是中国现存最大的祭祀建筑群。主体建筑祈年殿是中国古代建筑艺术的杰作，整个建筑群体现了中国古代宇宙观念。", lat: 39.882, lng: 116.407}, {name: "颐和园", province: "北京", city: "北京", year: 2007, category: "文化遗产", desc: "中国现存最大的皇家园林，以昆明湖、万寿山为基址，以杭州西湖为蓝本，汲取江南园林的设计手法而建成。被誉为“皇家园林博物馆”。", lat: 39.999, lng: 116.275}, {name: "八达岭-慕田峪长城旅游区", province: "北京", city: "北京", year: 2007, category: "文化遗产", desc: "北京北京国家5A级旅游景区。"}, {name: "明十三陵景区", province: "北京", city: "北京", year: 2011, category: "文化遗产", desc: "北京北京国家5A级旅游景区。"}, {name: "恭王府景区", province: "北京", city: "北京", year: 2012, category: "文化遗产", desc: "清代规模最大的王府，曾先后作为和珅、永璘的宅邸。恭王府历经清王朝由鼎盛至衰亡的历史进程，故有“一座恭王府，半部清代史”的说法。", lat: 39.933, lng: 116.384}, {name: "北京奥林匹克公园", province: "北京", city: "北京", year: 2012, category: "现代建筑", desc: "2008年北京奥运会的主场馆区，包含鸟巢（国家体育场）、水立方（国家游泳中心）等标志性建筑，是集体育、文化、休闲于一体的综合性公园。", lat: 39.993, lng: 116.39}, {name: "圆明园遗址公园", province: "北京", city: "北京", year: 2019, category: "文化遗产", desc: "清代大型皇家园林，由圆明园、长春园和绮春园组成，被誉为“万园之园”。1860年遭英法联军焚毁，现为遗址公园和爱国主义教育基地。", lat: 39.999, lng: 116.304}, {name: "北京大运河文化旅游景区", province: "北京", city: "通州", year: 2024, category: "文化遗产", desc: "大运河北京段沿线文化遗产，以大运河文化为主题，展现千年运河的历史风貌。"}, {name: "天津古文化街旅游区", province: "天津", city: "天津", year: 2007, category: "文化遗产", desc: "天津卫发祥地，以天后宫为中心，集古文化、民俗、商业于一体。"}, {name: "盘山风景名胜区", province: "天津", city: "蓟州", year: 2007, category: "自然风光", desc: "位于天津市蓟州区，有“京东第一山”之誉。盘山景色以“五峰八石”、“三盘之胜”而著称，集幽林、古洞、奇峰、秀水于一身。", lat: 40.078, lng: 117.445}, {name: "承德避暑山庄及周围寺庙景区", province: "河北", city: "承德", year: 2007, category: "文化遗产", desc: "河北承德国家5A级旅游景区。"}, {name: "保定白洋淀景区", province: "河北", city: "保定", year: 2007, category: "自然风光", desc: "华北平原最大的淡水湖泊，有“北国江南”之称。抗战时期“雁翎队”的故事发生地，荷花芦苇构成独特水乡风光。", lat: 38.872, lng: 115.97}, {name: "秦皇岛山海关景区", province: "河北", city: "秦皇岛", year: 2007, category: "文化遗产", desc: "明长城东部的重要关隘，有“天下第一关”之称。山海关城东门是明长城东端的起点，与万里之外的嘉峪关遥相呼应。", lat: 39.958, lng: 119.757}, {name: "保定野三坡景区", province: "河北", city: "保定", year: 2011, category: "自然风光", desc: "位于太行山脉和燕山山脉交汇处，以“雄、险、奇、幽”的自然景观闻名。景区有百里峡、龙门天关、鱼谷洞等多个景点。", lat: 39.683, lng: 115.353}, {name: "石家庄西柏坡景区", province: "河北", city: "石家庄", year: 2011, category: "红色旅游", desc: "中国革命的圣地，曾是中共中央所在地。党中央在此指挥了辽沈、淮海、平津三大战役，召开了具有伟大历史意义的七届二中全会。", lat: 38.356, lng: 113.987}, {name: "唐山清东陵景区", province: "河北", city: "唐山", year: 2015, category: "文化遗产", desc: "中国现存规模最宏大、体系最完整、布局最得体的帝王陵墓建筑群之一。埋葬着5位皇帝、15位皇后等共161人。", lat: 40.183, lng: 117.64}, {name: "邯郸娲皇宫景区", province: "河北", city: "邯郸", year: 2015, category: "文化遗产", desc: "中国规模最大、肇建时间最早的祀奉女娲的古建筑群。始建于北齐，依山就势而建，被誉为“华夏祖庙”。", lat: 36.594, lng: 113.695}, {name: "保定白石山景区", province: "河北", city: "保定", year: 2017, category: "自然风光", desc: "位于河北省涞源县，以大理岩峰林地貌著称。主峰海拔2096米，有“北方小黄山”之称。玻璃栈道为全国之最。", lat: 39.358, lng: 114.689}, {name: "邯郸广府古城景区", province: "河北", city: "邯郸", year: 2017, category: "文化遗产", desc: "中国北方唯一的旱地水城和太极之乡，杨氏太极拳和武氏太极拳发源地。"}, {name: "保定清西陵景区", province: "河北", city: "保定", year: 2019, category: "文化遗产", desc: "清朝雍正、嘉庆、道光、光绪四位皇帝及后妃的陵寝所在地。陵区内松柏苍翠，古建宏伟，是中国保存最完整的皇家陵寝群之一。", lat: 39.15, lng: 115.316}, {name: "承德金山岭长城景区", province: "河北", city: "承德", year: 2020, category: "文化遗产", desc: "万里长城最精华的一段，以视野开阔、敌楼密集著称。"}, {name: "唐山南湖·开滦旅游景区", province: "河北", city: "唐山", year: 2024, category: "现代建筑", desc: "由采煤沉降区改造而成的城市生态公园，唐山生态转型典范。"}, {name: "衡水湖旅游景区", province: "河北", city: "衡水", year: 2024, category: "自然风光", desc: "华北平原唯一保持完整生态系统的淡水湿地。"}, {name: "大同云冈石窟", province: "山西", city: "大同", year: 2007, category: "文化遗产", desc: "中国规模最大的古代石窟群之一，始凿于北魏时期。现存主要洞窟45个，大小窟龛252个，石雕造像51000余躯，为中国规模最大的古代石窟群之一。", lat: 40.107, lng: 113.128}, {name: "忻州五台山风景名胜区", province: "山西", city: "忻州", year: 2007, category: "文化遗产", desc: "中国佛教四大名山之首，文殊菩萨的道场。五台山寺院林立，现存完整寺院47处，以佛光寺和南禅寺的大殿为中国现存最古老的木结构建筑。", lat: 39.085, lng: 113.592}, {name: "晋城皇城相府生态文化旅游区", province: "山西", city: "晋城", year: 2011, category: "文化遗产", desc: "清文渊阁大学士兼吏部尚书陈廷敬的故居，是集明清两代城堡式建筑群于一体的官宦宅居古建筑群。", lat: 35.473, lng: 112.832}, {name: "晋中绵山风景区", province: "山西", city: "晋中", year: 2013, category: "自然风光", desc: "中国清明节发源地，以介子推的故事闻名。"}, {name: "晋中平遥古城", province: "山西", city: "晋中", year: 2015, category: "文化遗产", desc: "中国保存最为完好的四大古城之一，始建于西周宣王时期。古城较为完好地保留着明清时期的基本风貌，是中国古代城市的活样本。", lat: 37.189, lng: 112.175}, {name: "忻州雁门关景区", province: "山西", city: "忻州", year: 2017, category: "文化遗产", desc: "中华第一关，位于中国山西省忻州市代县县城以北约20公里处的雁门山中。是长城上的重要关隘，以“险”著称。", lat: 39.174, lng: 112.85}, {name: "临汾洪洞大槐树寻根祭祖园", province: "山西", city: "临汾", year: 2018, category: "文化遗产", desc: "全国以“寻根”和“祭祖”为主题的唯一民祭圣地。明初大移民的历史记忆，“问我祖先在何处，山西洪洞大槐树”。", lat: 36.253, lng: 111.676}, {name: "长治太行山大峡谷八泉峡景区", province: "山西", city: "长治", year: 2019, category: "自然风光", desc: "山西长治国家5A级旅游景区。"}, {name: "临汾云丘山景区", province: "山西", city: "临汾", year: 2020, category: "自然风光", desc: "位于临汾市乡宁县，以奇峰、怪石、清溪、溶洞著称。云丘山拥有国内最大规模的冰洞群，被称为“河汾第一名胜”。", lat: 35.963, lng: 110.854}, {name: "黄河壶口瀑布旅游区", province: "山西", city: "临汾", year: 2022, category: "自然风光", desc: "黄河由300米宽骤缩为50米，千里黄河一壶收的壮丽景象。"}, {name: "太原晋祠天龙山景区", province: "山西", city: "太原", year: 2024, category: "文化遗产", desc: "晋祠是中国现存最早的皇家园林，天龙山石窟以精美佛教造像著称。"}, {name: "晋中乔家大院景区", province: "山西", city: "晋中", year: 2024, category: "文化遗产", desc: "清代商业金融资本家乔致庸的宅院，北方民居建筑明珠。"}, {name: "鄂尔多斯响沙湾景区", province: "内蒙古", city: "鄂尔多斯", year: 2011, category: "自然风光", desc: "中国最大的沙漠旅游区，因沙子会发出轰鸣声而得名。银肯响沙居中国各响沙之首，被誉为“响沙之王”。", lat: 40.244, lng: 109.689}, {name: "鄂尔多斯成吉思汗陵旅游区", province: "内蒙古", city: "鄂尔多斯", year: 2011, category: "文化遗产", desc: "成吉思汗的衣冠冢，是蒙古族祭祀成吉思汗灵魂的地方。陵园占地约5.5公顷，建筑雄伟，具有浓郁的蒙古族特色。", lat: 39.372, lng: 109.86}, {name: "呼伦贝尔中俄边境旅游区", province: "内蒙古", city: "呼伦贝尔", year: 2016, category: "边境风情", desc: "内蒙古呼伦贝尔国家5A级旅游景区。"}, {name: "兴安盟阿尔山-柴河旅游景区", province: "内蒙古", city: "兴安盟", year: 2017, category: "自然风光", desc: "内蒙古兴安盟国家5A级旅游景区。"}, {name: "赤峰阿斯哈图石林景区", province: "内蒙古", city: "赤峰", year: 2018, category: "自然风光", desc: "世界罕见的花岗岩石林地貌。"}, {name: "阿拉善盟胡杨林旅游区", province: "内蒙古", city: "阿拉善盟", year: 2019, category: "自然风光", desc: "世界仅存三大胡杨林之一，总面积约26000公顷。每到金秋时节，胡杨林一片金黄，蔚为壮观，被誉为“最美胡杨林”。", lat: 41.96, lng: 101.064}, {name: "呼伦贝尔大草原·莫尔格勒河景区", province: "内蒙古", city: "呼伦贝尔", year: 2024, category: "自然风光", desc: "天下第一曲水莫尔格勒河蜿蜒于呼伦贝尔大草原。"}, {name: "呼和浩特老牛湾黄河大峡谷旅游区", province: "内蒙古", city: "呼和浩特", year: 2024, category: "自然风光", desc: "黄河入晋第一湾，壮美的黄河峡谷和古朴的黄河人家。"}, {name: "沈阳植物园", province: "辽宁", city: "沈阳", year: 2007, category: "园林景观", desc: "中国最大的城市植物园之一，占地面积约211公顷。园内汇集了国内外数千种植物，有百合塔、凤凰广场等标志性建筑。", lat: 41.856, lng: 123.612}, {name: "大连老虎滩海洋公园·极地馆", province: "辽宁", city: "大连", year: 2007, category: "主题乐园", desc: "辽宁大连国家5A级旅游景区。"}, {name: "大连金石滩景区", province: "辽宁", city: "大连", year: 2011, category: "自然风光", desc: "集地质奇观、海滨风光、主题于一体的综合旅游区。"}, {name: "本溪水洞景区", province: "辽宁", city: "本溪", year: 2015, category: "自然风光", desc: "世界最长的地下充水溶洞，已探明的地下暗河全长3000余米。洞内钟乳石形态各异，泛舟其中如入仙境。", lat: 41.298, lng: 123.76}, {name: "鞍山千山风景名胜区", province: "辽宁", city: "鞍山", year: 2017, category: "自然风光", desc: "位于辽宁省鞍山市东南，为长白山支脉。千山有“无峰不奇，无石不峭，无庙不古”之誉，以奇峰、岩松、古庙、梨花为四绝。", lat: 41.017, lng: 123.078}, {name: "盘锦红海滩风景廊道景区", province: "辽宁", city: "盘锦", year: 2019, category: "自然风光", desc: "辽宁盘锦国家5A级旅游景区。"}, {name: "本溪五女山景区", province: "辽宁", city: "本溪", year: 2024, category: "文化遗产", desc: "高句丽开国都城遗址，世界文化遗产。"}, {name: "长白山景区", province: "吉林", city: "延边", year: 2007, category: "自然风光", desc: "中朝两国的界山，中华十大名山之一。长白山天池是中国最高、最深、最大的火山口湖，松花江、鸭绿江、图们江的发源地。", lat: 42.021, lng: 128.056}, {name: "长春伪满皇宫博物院", province: "吉林", city: "长春", year: 2007, category: "文化遗产", desc: "清朝末代皇帝爱新觉罗·溥仪充当伪满洲国傀儡皇帝时的宫殿。是中国比较完整的宫廷遗址之一。", lat: 43.898, lng: 125.343}, {name: "长春净月潭景区", province: "吉林", city: "长春", year: 2011, category: "自然风光", desc: "亚洲最大的人工森林，因形似弯月而得名。"}, {name: "延边敦化六鼎山文化旅游区", province: "吉林", city: "敦化", year: 2015, category: "文化遗产", desc: "位于长白山腹地，以金鼎大佛和佛教文化为核心。金鼎大佛高48米，是世界上最大的释迦牟尼佛坐像之一。", lat: 43.372, lng: 128.235}, {name: "长春长影世纪城景区", province: "吉林", city: "长春", year: 2015, category: "主题乐园", desc: "中国第一家世界级电影主题娱乐园。"}, {name: "长春世界雕塑园", province: "吉林", city: "长春", year: 2017, category: "园林景观", desc: "世界上最大的建于城市中的雕塑公园。汇集了来自216个国家和地区的400多位雕塑家的439件作品。", lat: 43.827, lng: 125.298}, {name: "通化高句丽文物古迹旅游景区", province: "吉林", city: "通化", year: 2019, category: "文化遗产", desc: "世界文化遗产，以高句丽王城、王陵和贵族墓葬为主体。"}, {name: "松原查干湖景区", province: "吉林", city: "松原", year: 2024, category: "自然风光", desc: "中国十大淡水湖之一，冬季冰雪渔猎文化节闻名全国。"}, {name: "白城大安嫩江湾旅游区", province: "吉林", city: "白城", year: 2024, category: "自然风光", desc: "嫩江流入吉林的第一个湾，以湿地风光和辽金文化著称。"}, {name: "哈尔滨太阳岛景区", province: "黑龙江", city: "哈尔滨", year: 2007, category: "自然风光", desc: "位于松花江北岸，是哈尔滨的标志性景区。冬季的太阳岛国际雪雕艺术博览会闻名遐迩。", lat: 45.788, lng: 126.598}, {name: "牡丹江镜泊湖景区", province: "黑龙江", city: "牡丹江", year: 2011, category: "自然风光", desc: "中国最大、世界第二大的高山堰塞湖。吊水楼瀑布是镜泊湖最著名的景观，湖光山色美不胜收。", lat: 44.054, lng: 128.898}, {name: "黑河五大连池景区", province: "黑龙江", city: "黑河", year: 2011, category: "自然风光", desc: "世界地质公园，以火山地貌和矿泉资源闻名。由14座新老期火山喷发形成5个串珠状湖泊，被誉为“天然火山博物馆”。", lat: 48.74, lng: 126.145}, {name: "伊春林海奇石景区", province: "黑龙江", city: "伊春", year: 2013, category: "自然风光", desc: "黑龙江伊春国家5A级旅游景区。"}, {name: "大兴安岭北极村旅游景区", province: "黑龙江", city: "漠河", year: 2015, category: "自然风光", desc: "黑龙江漠河国家5A级旅游景区。"}, {name: "鸡西虎头旅游景区", province: "黑龙江", city: "鸡西", year: 2019, category: "自然风光", desc: "黑龙江鸡西国家5A级旅游景区。"}, {name: "齐齐哈尔扎龙生态旅游区", province: "黑龙江", city: "齐齐哈尔", year: 2024, category: "自然风光", desc: "中国最大的以鹤类为主的珍稀水禽自然保护区，丹顶鹤故乡。"}, {name: "东方明珠广播电视塔", province: "上海", city: "上海", year: 2007, category: "现代建筑", desc: "上海上海国家5A级旅游景区。"}, {name: "上海野生动物园", province: "上海", city: "上海", year: 2007, category: "主题乐园", desc: "中国首座国家级野生动物园，汇集了世界各地代表性动物200余种、上万余头（只）。", lat: 31.058, lng: 121.727}, {name: "上海科技馆", province: "上海", city: "上海", year: 2010, category: "博物馆", desc: "中国重要的科普教育基地，设有地壳探秘、生物万象、智慧之光等11个主题展区，拥有IMAX球幕影院。", lat: 31.219, lng: 121.539}, {name: "中共一大·二大·四大纪念馆景区", province: "上海", city: "上海", year: 2021, category: "红色旅游", desc: "上海上海国家5A级旅游景区。"}, {name: "西沙明珠湖景区", province: "上海", city: "上海", year: 2024, category: "自然风光", desc: "位于崇明岛，以湖泊湿地生态为核心。"}, {name: "苏州园林（拙政园·留园·虎丘）", province: "江苏", city: "苏州", year: 2007, category: "文化遗产", desc: "中国古典园林的代表，拙政园是苏州最大的古典园林，留园以建筑布局精巧著称，虎丘有“吴中第一名胜”之誉。", lat: 31.325, lng: 120.629}, {name: "苏州周庄古镇景区", province: "江苏", city: "苏州", year: 2007, category: "文化遗产", desc: "中国第一水乡，始建于1086年。镇内保存了大量明清建筑，以沈厅、张厅最为著名，“小桥流水人家”的典型江南水乡。", lat: 31.115, lng: 120.848}, {name: "南京钟山风景名胜区-中山陵园风景区", province: "江苏", city: "南京", year: 2007, category: "文化遗产", desc: "包含中山陵、明孝陵、灵谷寺等众多名胜古迹。中山陵是孙中山先生的陵墓，明孝陵是明太祖朱元璋的陵墓。", lat: 32.058, lng: 118.844}, {name: "无锡影视基地三国水浒城景区", province: "江苏", city: "无锡", year: 2007, category: "主题乐园", desc: "中央电视台为拍摄《三国演义》和《水浒传》而建的影视基地。依山傍水，景色秀丽。", lat: 31.468, lng: 120.114}, {name: "无锡灵山大佛景区", province: "江苏", city: "无锡", year: 2009, category: "文化遗产", desc: "灵山大佛高88米，世界最高露天青铜释迦牟尼立像。"}, {name: "苏州同里古镇景区", province: "江苏", city: "苏州", year: 2010, category: "文化遗产", desc: "江南六大古镇之一，始建于宋代。镇内家家临水，户户通舟，以退思园最为著名，被列入世界文化遗产。", lat: 31.151, lng: 120.717}, {name: "南京夫子庙-秦淮风光带", province: "江苏", city: "南京", year: 2010, category: "文化遗产", desc: "以夫子庙古建筑群为中心，以十里内秦淮河为轴线。集古迹、园林、画舫、市街和民俗于一体。", lat: 32.021, lng: 118.786}, {name: "常州环球恐龙城休闲旅游区", province: "江苏", city: "常州", year: 2010, category: "主题乐园", desc: "中国最大的恐龙主题乐园，集恐龙谷温泉、恐龙城大剧场、迪诺水镇等于一体。", lat: 31.823, lng: 119.974}, {name: "扬州瘦西湖风景区", province: "江苏", city: "扬州", year: 2010, category: "自然风光", desc: "“两堤花柳全依水，一路楼台直到山”的湖上园林。瘦西湖以“瘦”为特征，是扬州雍容华贵的象征。", lat: 32.414, lng: 119.424}, {name: "南通濠河风景区", province: "江苏", city: "南通", year: 2012, category: "自然风光", desc: "国内保存最完整的古护城河之一，全长约10公里。濠河环绕南通老城区，被誉为“城市的翡翠项链”。", lat: 32.018, lng: 120.856}, {name: "泰州溱湖旅游景区", province: "江苏", city: "泰州", year: 2012, category: "自然风光", desc: "以溱湖为主体的湿地公园，溱潼会船节闻名。"}, {name: "苏州金鸡湖景区", province: "江苏", city: "苏州", year: 2012, category: "现代建筑", desc: "中国最大的城市湖泊公园，以现代都市风貌著称。"}, {name: "镇江三山景区（金山·焦山·北固山）", province: "江苏", city: "镇江", year: 2012, category: "自然风光", desc: "金山以“水漫金山”的传说闻名，焦山以碑林著称，北固山以甘露寺为胜，三山遥相呼应。", lat: 32.224, lng: 119.416}, {name: "无锡鼋头渚景区", province: "江苏", city: "无锡", year: 2012, category: "自然风光", desc: "太湖风景名胜区的精华所在，有“太湖第一名胜”之称。鼋头渚樱花谷是中国最大的樱花观赏地之一。", lat: 31.514, lng: 120.216}, {name: "苏州吴中太湖旅游区", province: "江苏", city: "苏州", year: 2013, category: "自然风光", desc: "以太湖山水为主体，包含东山、西山、光福等景区。碧螺春茶的原产地，太湖风光的精华所在。", lat: 31.189, lng: 120.398}, {name: "苏州沙家浜·虞山尚湖旅游区", province: "江苏", city: "苏州", year: 2013, category: "自然风光", desc: "沙家浜以芦苇荡闻名，因京剧《沙家浜》而名扬天下。虞山尚湖以山水相依著称。", lat: 31.553, lng: 120.842}, {name: "常州天目湖景区", province: "江苏", city: "常州", year: 2013, category: "自然风光", desc: "江苏常州国家5A级旅游景区。"}, {name: "镇江茅山景区", province: "江苏", city: "镇江", year: 2014, category: "文化遗产", desc: "江苏镇江国家5A级旅游景区。"}, {name: "淮安周恩来故里景区", province: "江苏", city: "淮安", year: 2015, category: "红色旅游", desc: "江苏淮安国家5A级旅游景区。"}, {name: "盐城中华麋鹿园景区", province: "江苏", city: "盐城", year: 2015, category: "自然风光", desc: "江苏盐城国家5A级旅游景区。"}, {name: "徐州云龙湖景区", province: "江苏", city: "徐州", year: 2016, category: "自然风光", desc: "江苏徐州国家5A级旅游景区。"}, {name: "连云港花果山景区", province: "江苏", city: "连云港", year: 2016, category: "自然风光", desc: "《西游记》中花果山的原型，有“东海第一胜境”之称。主峰玉女峰海拔624.4米，是江苏省最高峰。", lat: 34.627, lng: 119.28}, {name: "常州春秋淹城旅游区", province: "江苏", city: "常州", year: 2017, category: "文化遗产", desc: "中国最古老最完整的地面城池遗址，建于春秋时期。"}, {name: "无锡惠山古镇景区", province: "江苏", city: "无锡", year: 2019, category: "文化遗产", desc: "以祠堂文化为核心的江南古镇，保存118处古祠堂。"}, {name: "宿迁洪泽湖湿地景区", province: "江苏", city: "宿迁", year: 2020, category: "自然风光", desc: "中国第四大淡水湖洪泽湖的湿地保护区。"}, {name: "连云港连岛景区", province: "江苏", city: "连云港", year: 2024, category: "自然风光", desc: "江苏省最大的海岛。"}, {name: "杭州西湖风景名胜区", province: "浙江", city: "杭州", year: 2007, category: "自然风光", desc: "“欲把西湖比西子，淡妆浓抹总相宜”。西湖是中国十大风景名胜之一，以“一山、二塔、三岛、三堤、五湖”为基本格局。", lat: 30.242, lng: 120.149}, {name: "温州雁荡山风景名胜区", province: "浙江", city: "温州", year: 2007, category: "自然风光", desc: "中国十大名山之一，以奇峰怪石、古洞石室、飞瀑流泉著称。素有“海上名山”、“寰中绝胜”之誉。", lat: 28.38, lng: 121.064}, {name: "舟山普陀山风景名胜区", province: "浙江", city: "舟山", year: 2007, category: "文化遗产", desc: "中国佛教四大名山之一，观音菩萨的道场。普陀山四面环海，以“海天佛国”著称。", lat: 30.006, lng: 122.381}, {name: "杭州千岛湖风景名胜区", province: "浙江", city: "杭州", year: 2010, category: "自然风光", desc: "为建设新安江水电站拦蓄而成的人工湖，拥有1078个翠岛。湖水清澈，水质达国家一级标准，被誉为“天下第一秀水”。", lat: 29.606, lng: 118.947}, {name: "嘉兴乌镇古镇旅游区", province: "浙江", city: "嘉兴", year: 2010, category: "文化遗产", desc: "浙江嘉兴国家5A级旅游景区。"}, {name: "宁波溪口-滕头旅游景区", province: "浙江", city: "宁波", year: 2010, category: "文化遗产", desc: "溪口是蒋介石的故里，有蒋氏故居等民国历史遗迹。滕头是全球生态500佳，以生态农业闻名。", lat: 29.686, lng: 121.281}, {name: "金华横店影视城景区", province: "浙江", city: "金华", year: 2010, category: "主题乐园", desc: "亚洲最大的影视拍摄基地，被称为“中国好莱坞”。建有秦王宫、清明上河图、明清宫苑等跨越千年的影视拍摄场景。", lat: 29.156, lng: 120.307}, {name: "嘉兴南湖旅游区", province: "浙江", city: "嘉兴", year: 2011, category: "红色旅游", desc: "中共一大的闭幕地，中国共产党的诞生地。南湖红船是中国共产党梦想起航的地方。", lat: 30.751, lng: 120.752}, {name: "杭州西溪湿地旅游区", province: "浙江", city: "杭州", year: 2012, category: "自然风光", desc: "中国首个国家湿地公园，一曲溪流一曲烟。"}, {name: "绍兴鲁迅故里·沈园景区", province: "浙江", city: "绍兴", year: 2012, category: "文化遗产", desc: "鲁迅先生诞生和少年时期生活的地方。沈园是宋代著名园林，因陆游与唐婉的爱情故事闻名。", lat: 30.003, lng: 120.581}, {name: "衢州根宫佛国文化旅游区", province: "浙江", city: "衢州", year: 2013, category: "文化遗产", desc: "浙江衢州国家5A级旅游景区。"}, {name: "湖州南浔古镇景区", province: "浙江", city: "湖州", year: 2015, category: "文化遗产", desc: "中国历史文化名镇，素有“文化之邦”、“诗书之乡”之称。南浔古镇以丝绸业闻名，中西合璧的建筑独具特色。", lat: 30.869, lng: 120.424}, {name: "台州天台山景区", province: "浙江", city: "台州", year: 2015, category: "文化遗产", desc: "佛教天台宗的发源地，道教南宗的祖庭。国清寺是中国佛教天台宗的根本道场。", lat: 29.176, lng: 121.039}, {name: "台州神仙居景区", province: "浙江", city: "台州", year: 2015, category: "自然风光", desc: "以火山流纹岩地貌为特色，有“神仙居之奇，在于峰奇、石奇、洞奇”之说。如意桥是世界最大高空悬挑玻璃桥。", lat: 28.834, lng: 120.637}, {name: "嘉兴西塘古镇旅游景区", province: "浙江", city: "嘉兴", year: 2017, category: "文化遗产", desc: "生活着的千年古镇，以廊棚和古弄著称。"}, {name: "衢州江郎山·廿八都旅游区", province: "浙江", city: "衢州", year: 2017, category: "自然风光", desc: "江郎山以三爿石著称，廿八都是保存完好的古驿站。"}, {name: "宁波天一阁·月湖景区", province: "浙江", city: "宁波", year: 2018, category: "文化遗产", desc: "天一阁是中国现存最古老的私人藏书楼。"}, {name: "丽水缙云仙都景区", province: "浙江", city: "丽水", year: 2019, category: "自然风光", desc: "以峰岩奇绝、山水神秀为特色。鼎湖峰高170.8米，被誉为“天下第一峰”，是轩辕黄帝炼丹升天之地。", lat: 28.658, lng: 120.091}, {name: "温州刘伯温故里景区", province: "浙江", city: "温州", year: 2020, category: "文化遗产", desc: "明朝开国元勋刘伯温的故乡。"}, {name: "台州台州府城文化旅游区", province: "浙江", city: "台州", year: 2022, category: "文化遗产", desc: "以江南长城和紫阳古街闻名。"}, {name: "丽水云和梯田景区", province: "浙江", city: "丽水", year: 2024, category: "自然风光", desc: "拥有1000多年历史的梯田群，跨越高山、丘谷三个梯度。云雾缭绕中层层叠叠的梯田如诗如画。", lat: 28.118, lng: 119.568}, {name: "金华双龙风景旅游区", province: "浙江", city: "金华", year: 2024, category: "自然风光", desc: "以双龙洞为代表的溶洞景区，卧舟入洞为全国独有。"}, {name: "黄山风景区", province: "安徽", city: "黄山", year: 2007, category: "自然风光", desc: "安徽黄山国家5A级旅游景区。"}, {name: "池州九华山风景区", province: "安徽", city: "池州", year: 2007, category: "文化遗产", desc: "中国佛教四大名山之一，地藏菩萨的道场。九华山以佛教文化和自然美景著称，现存古寺庙99座。", lat: 30.478, lng: 117.801}, {name: "安庆天柱山风景区", province: "安徽", city: "安庆", year: 2011, category: "自然风光", desc: "古称皖山，安徽省简称皖由此而来。"}, {name: "黄山皖南古村落（西递·宏村）", province: "安徽", city: "黄山", year: 2011, category: "文化遗产", desc: "安徽黄山国家5A级旅游景区。"}, {name: "六安天堂寨旅游景区", province: "安徽", city: "六安", year: 2012, category: "自然风光", desc: "位于大别山腹地，有“植物的王国、动物的乐园、圣水的故乡”之称。主峰天堂寨海拔1729.13米。", lat: 31.064, lng: 115.817}, {name: "宣城绩溪龙川景区", province: "安徽", city: "宣城", year: 2012, category: "文化遗产", desc: "胡姓聚族而居的古村落，已有一千六百余年历史。龙川胡氏宗祠被誉为“江南第一祠”。", lat: 30.067, lng: 118.584}, {name: "阜阳八里河景区", province: "安徽", city: "阜阳", year: 2013, category: "自然风光", desc: "位于淮河中游南岸，是皖北平原上的一颗明珠。景区由“世界风光”、“锦绣中华”、“碧波游览”等区域组成。", lat: 32.632, lng: 116.275}, {name: "黄山古徽州文化旅游区", province: "安徽", city: "黄山", year: 2014, category: "文化遗产", desc: "以徽州古城、棠樾牌坊群为代表，集中展示徽文化。"}, {name: "合肥三河古镇景区", province: "安徽", city: "合肥", year: 2015, category: "文化遗产", desc: "中国历史文化名镇，距今已有2500多年历史。因丰乐河、杭埠河、小南河三水流贯其间而得名。", lat: 31.506, lng: 117.262}, {name: "芜湖方特旅游区", province: "安徽", city: "芜湖", year: 2016, category: "主题乐园", desc: "中国规模最大的高科技主题乐园之一，包含欢乐世界、梦幻王国、东方神画和水上乐园四个园区。", lat: 31.337, lng: 118.389}, {name: "六安万佛湖风景区", province: "安徽", city: "六安", year: 2016, category: "自然风光", desc: "以人工湖为主体的水利风景区，湖中有60多个岛屿。"}, {name: "马鞍山采石矶景区", province: "安徽", city: "马鞍山", year: 2020, category: "自然风光", desc: "长江三大名矶之首，因李白多次登临留下千古名篇而闻名。翠螺山临江而立，峭壁千寻。", lat: 31.642, lng: 118.439}, {name: "滁州琅琊山景区", province: "安徽", city: "滁州", year: 2024, category: "自然风光", desc: "醉翁之意不在酒，欧阳修《醉翁亭记》诞生地。"}, {name: "厦门鼓浪屿风景名胜区", province: "福建", city: "厦门", year: 2007, category: "文化遗产", desc: "“海上花园”鼓浪屿面积仅1.91平方公里，却汇集了不同风格的建筑，被称为“万国建筑博览”。2017年列入世界文化遗产。", lat: 24.447, lng: 118.064}, {name: "南平武夷山风景名胜区", province: "福建", city: "南平", year: 2007, category: "自然与文化双遗产", desc: "世界自然与文化双遗产，中国丹霞地貌的典型代表。武夷山是朱子理学的发源地，大红袍的原产地。", lat: 27.718, lng: 117.957}, {name: "三明泰宁风景旅游区", province: "福建", city: "三明", year: 2011, category: "自然风光", desc: "福建三明国家5A级旅游景区。"}, {name: "福建土楼（永定·南靖）旅游景区", province: "福建", city: "龙岩", year: 2011, category: "文化遗产", desc: "世界文化遗产，是中国传统民居建筑的奇葩。土楼以生土夯筑，兼具防御和居住功能，被誉为“东方古城堡”。", lat: 24.654, lng: 116.973}, {name: "宁德白水洋-鸳鸯溪旅游区", province: "福建", city: "宁德", year: 2012, category: "自然风光", desc: "拥有世界唯一的“浅水广场”——平底基岩河床。鸳鸯溪是中国唯一的鸳鸯猕猴自然保护区。", lat: 26.927, lng: 119.051}, {name: "泉州清源山风景名胜区", province: "福建", city: "泉州", year: 2012, category: "自然风光", desc: "泉州十八景之一，以老君岩最负盛名。老君岩是中国现存最大的道教石雕造像。", lat: 24.908, lng: 118.593}, {name: "宁德太姥山旅游区", province: "福建", city: "宁德", year: 2013, category: "自然风光", desc: "海上仙都，以花岗岩峰林岩洞著称。"}, {name: "福州三坊七巷景区", province: "福建", city: "福州", year: 2015, category: "文化遗产", desc: "中国都市仅存的一块“里坊制度活化石”，自晋、唐形成起，便是贵族和士大夫的聚居地。走出了林则徐、严复等大量历史名人。", lat: 26.084, lng: 119.291}, {name: "龙岩古田旅游区", province: "福建", city: "龙岩", year: 2015, category: "红色旅游", desc: "中国共产党建军史上的里程碑，1929年古田会议在此召开，确立了“思想建党、政治建军”的原则。", lat: 25.225, lng: 116.82}, {name: "莆田湄洲岛妈祖文化旅游区", province: "福建", city: "莆田", year: 2020, category: "文化遗产", desc: "妈祖文化的发源地，全世界妈祖信众的朝圣中心。"}, {name: "厦门园林植物园景区", province: "福建", city: "厦门", year: 2024, category: "园林景观", desc: "万石植物园，汇集热带亚热带植物6000多种。"}, {name: "龙岩冠豸山景区", province: "福建", city: "龙岩", year: 2024, category: "自然风光", desc: "以丹霞地貌和客家文化著称。"}, {name: "九江庐山风景名胜区", province: "江西", city: "九江", year: 2007, category: "自然与文化双遗产", desc: "“不识庐山真面目，只缘身在此山中”。以雄、奇、险、秀闻名，素有“匡庐奇秀甲天下”之誉。", lat: 29.558, lng: 115.983}, {name: "吉安井冈山风景旅游区", province: "江西", city: "吉安", year: 2007, category: "红色旅游", desc: "中国革命的摇篮，创建了中国第一个农村革命根据地。以“革命摇篮”和“绿色宝库”闻名于世。", lat: 26.568, lng: 114.147}, {name: "上饶三清山风景名胜区", province: "江西", city: "上饶", year: 2011, category: "自然风光", desc: "世界自然遗产，以“奇峰怪石、古树名花、流泉飞瀑、云海雾涛”四绝著称。是道教名山，因玉京、玉虚、玉华三峰宛如道教三清而得名。", lat: 28.942, lng: 118.05}, {name: "鹰潭龙虎山风景名胜区", province: "江西", city: "鹰潭", year: 2012, category: "自然与文化双遗产", desc: "中国道教发源地，天师道祖庭。以丹霞地貌和古越族崖墓群闻名，“丹霞绝美、道教祖庭、古越之谜”三大特色。", lat: 28.055, lng: 116.958}, {name: "上饶婺源江湾景区", province: "江西", city: "上饶", year: 2013, category: "文化遗产", desc: "“中国最美乡村”婺源的代表景区，以徽派古村落和油菜花闻名。保存了大量明清古建筑。", lat: 29.308, lng: 117.955}, {name: "景德镇古窑民俗博览区", province: "江西", city: "景德镇", year: 2013, category: "文化遗产", desc: "“千年瓷都”景德镇的核心景区，展示古代制瓷工艺。有历代古窑，可观赏手工制瓷全过程。", lat: 29.278, lng: 117.207}, {name: "赣州瑞金共和国摇篮景区", province: "江西", city: "赣州", year: 2015, category: "红色旅游", desc: "中华苏维埃共和国临时中央政府诞生地，被称为“红色故都”。瑞金是举世闻名的二万五千里长征出发地。", lat: 25.876, lng: 116.026}, {name: "宜春明月山旅游区", province: "江西", city: "宜春", year: 2015, category: "自然风光", desc: "以“奇峰险壑、温泉飞瀑、珍稀动植物和禅宗文化”为主要特色。富硒温泉闻名遐迩。", lat: 27.668, lng: 114.372}, {name: "抚州大觉山景区", province: "江西", city: "抚州", year: 2017, category: "自然风光", desc: "以“深山藏古寺、峡谷飘玉带”闻名。大觉山漂流全长3.6公里，落差188米，被誉为“亚洲第一漂”。", lat: 27.481, lng: 116.825}, {name: "上饶龟峰景区", province: "江西", city: "上饶", year: 2017, category: "自然风光", desc: "以丹霞地貌著称，无山不龟，无石不龟。"}, {name: "南昌滕王阁旅游区", province: "江西", city: "南昌", year: 2018, category: "文化遗产", desc: "江西南昌国家5A级旅游景区。"}, {name: "萍乡武功山景区", province: "江西", city: "萍乡", year: 2019, category: "自然风光", desc: "以高山草甸著称，户外徒步和露营热门目的地。"}, {name: "九江庐山西海景区", province: "江西", city: "九江", year: 2020, category: "自然风光", desc: "柘林湖大坝拦蓄修河而成的人工湖。"}, {name: "赣州三百山景区", province: "江西", city: "赣州", year: 2022, category: "自然风光", desc: "东江源头，以原始森林和温泉著称。"}, {name: "上饶篁岭景区", province: "江西", city: "上饶", year: 2024, category: "文化遗产", desc: "以晒秋民俗闻名的古村落。"}, {name: "泰安泰山风景名胜区", province: "山东", city: "泰安", year: 2007, category: "自然与文化双遗产", desc: "五岳之首，世界自然与文化双遗产。“会当凌绝顶，一览众山小”。泰山自古以来就是中国最著名的山岳之一。", lat: 36.256, lng: 117.101}, {name: "烟台蓬莱阁-三仙山-八仙过海旅游区", province: "山东", city: "烟台", year: 2007, category: "文化遗产", desc: "山东烟台国家5A级旅游景区。"}, {name: "济宁曲阜明故城（三孔）旅游区", province: "山东", city: "济宁", year: 2007, category: "文化遗产", desc: "孔庙、孔府、孔林合称“三孔”，是中国历代纪念孔子、推崇儒学的表征。以丰厚的文化积淀、悠久的历史著称。", lat: 35.596, lng: 116.986}, {name: "青岛崂山景区", province: "山东", city: "青岛", year: 2011, category: "自然风光", desc: "“泰山虽云高，不如东海崂”。崂山是中国海岸线上的最高峰，有“海上名山第一”之称，道教名山。", lat: 36.166, lng: 120.62}, {name: "威海刘公岛景区", province: "山东", city: "威海", year: 2011, category: "文化遗产", desc: "北洋水师的诞生地和甲午战争的主战场。有“不沉的战舰”之称，是中国近代海军的摇篮和甲午战争纪念地。", lat: 37.507, lng: 122.145}, {name: "烟台龙口南山景区", province: "山东", city: "烟台", year: 2011, category: "文化遗产", desc: "以历史文化为底蕴，集宗教文化、历史文化、滨海文化于一体。南山大佛高38.66米，是世界上最大的锡青铜坐佛。", lat: 37.643, lng: 120.478}, {name: "济南天下第一泉景区", province: "山东", city: "济南", year: 2013, category: "自然风光", desc: "以趵突泉为核心，“泉城”济南的标志性景观。趵突泉位列济南七十二名泉之首，被誉为“天下第一泉”。", lat: 36.661, lng: 117.009}, {name: "枣庄台儿庄古城景区", province: "山东", city: "枣庄", year: 2013, category: "文化遗产", desc: "“天下第一庄”，因台儿庄大战闻名中外。古城重建后保留了大战遗迹，是京杭大运河沿线最后一座“活着的古城”。", lat: 34.554, lng: 117.708}, {name: "沂蒙山景区", province: "山东", city: "临沂", year: 2013, category: "自然风光", desc: "世界著名养生长寿圣地，以蒙山和沂山为主体。蒙山主峰龟蒙顶海拔1156米，为山东第二高峰。", lat: 35.535, lng: 117.859}, {name: "潍坊青州古城景区", province: "山东", city: "潍坊", year: 2017, category: "文化遗产", desc: "古九州之一，有7000余年的发展史。城内保存了大量古建筑，有“海岱惟青州”之美誉。", lat: 36.684, lng: 118.478}, {name: "威海华夏城景区", province: "山东", city: "威海", year: 2017, category: "主题乐园", desc: "以展示东方古典文化为主的大型文化景区。由矿坑生态修复而成，被誉为“矿坑上的华夏城”。", lat: 37.43, lng: 122.145}, {name: "东营黄河口生态旅游区", province: "山东", city: "东营", year: 2019, category: "自然风光", desc: "黄河入海口湿地，新生湿地和野生鸟类天堂。"}, {name: "临沂萤火虫水洞·地下大峡谷旅游区", province: "山东", city: "临沂", year: 2020, category: "自然风光", desc: "以萤火虫水洞和地下大峡谷闻名。"}, {name: "济宁微山湖旅游区", province: "山东", city: "济宁", year: 2022, category: "自然风光", desc: "中国北方最大淡水湖，以铁道游击队的故事和万亩荷花著称。"}, {name: "青岛奥帆海洋文化旅游区", province: "山东", city: "青岛", year: 2024, category: "现代建筑", desc: "2008年北京奥运会帆船比赛场地，以奥帆中心为核心，结合海洋文化和青岛特色。", lat: 36.056, lng: 120.393}, {name: "淄博周村古商城景区", province: "山东", city: "淄博", year: 2024, category: "文化遗产", desc: "中国活着的古商业建筑博物馆。"}, {name: "郑州嵩山少林景区", province: "河南", city: "郑州", year: 2007, category: "文化遗产", desc: "河南郑州国家5A级旅游景区。"}, {name: "洛阳龙门石窟", province: "河南", city: "洛阳", year: 2007, category: "文化遗产", desc: "世界文化遗产，中国四大石窟之一。始凿于北魏孝文帝年间，现存窟龛2345个，造像10万余尊，碑刻题记2800余品。", lat: 34.568, lng: 112.468}, {name: "焦作云台山-神农山-青天河风景名胜区", province: "河南", city: "焦作", year: 2007, category: "自然风光", desc: "以云台山世界地质公园为主体，拥有亚洲最高落差瀑布——云台天瀑（落差314米）。红石峡丹崖碧水，堪称一绝。", lat: 35.235, lng: 113.366}, {name: "安阳殷墟景区", province: "河南", city: "安阳", year: 2011, category: "文化遗产", desc: "中国商代晚期的都城遗址，是中国历史上第一个有文献可考、并为考古学和甲骨文所证实的都城。", lat: 36.108, lng: 114.314}, {name: "洛阳白云山景区", province: "河南", city: "洛阳", year: 2011, category: "自然风光", desc: "位于伏牛山腹地，海拔1500米以上的山峰37座。白云山有“中国最美的地方”之称。", lat: 33.677, lng: 111.795}, {name: "开封清明上河园", province: "河南", city: "开封", year: 2011, category: "主题乐园", desc: "以宋代张择端名画《清明上河图》为蓝本的大型宋代文化主题公园。再现了汴京的繁华盛景。", lat: 34.818, lng: 114.339}, {name: "平顶山尧山-中原大佛景区", province: "河南", city: "平顶山", year: 2011, category: "自然风光", desc: "尧山以温泉和原始森林著称，中原大佛高208米。"}, {name: "洛阳老君山-鸡冠洞旅游区", province: "河南", city: "洛阳", year: 2012, category: "自然风光", desc: "道教名山，传为老子归隐修炼之地。"}, {name: "洛阳龙潭大峡谷景区", province: "河南", city: "洛阳", year: 2013, category: "自然风光", desc: "以红岩嶂谷群地质地貌著称。"}, {name: "南阳西峡恐龙遗迹园-老界岭旅游区", province: "河南", city: "南阳", year: 2014, category: "自然风光", desc: "河南南阳国家5A级旅游景区。"}, {name: "驻马店嵖岈山旅游景区", province: "河南", city: "驻马店", year: 2015, category: "自然风光", desc: "河南驻马店国家5A级旅游景区。"}, {name: "安阳红旗渠-太行大峡谷旅游景区", province: "河南", city: "安阳", year: 2016, category: "红色旅游", desc: "河南安阳国家5A级旅游景区。"}, {name: "商丘芒砀山汉文化旅游景区", province: "河南", city: "商丘", year: 2017, category: "文化遗产", desc: "以汉代梁国王陵墓群和刘邦斩蛇起义传说著称。"}, {name: "新乡八里沟景区", province: "河南", city: "新乡", year: 2019, category: "自然风光", desc: "太行山水之精华，以“北方水世界，太行山水魂”著称。八里沟瀑布落差180米，是太行山区落差最大的瀑布。", lat: 35.577, lng: 113.603}, {name: "信阳鸡公山景区", province: "河南", city: "信阳", year: 2022, category: "自然风光", desc: "中国四大避暑胜地之一，位于大别山北麓。鸡公山报晓峰形如雄鸡报晓，故名鸡公山。", lat: 31.787, lng: 114.078}, {name: "周口太昊伏羲陵文化旅游区", province: "河南", city: "周口", year: 2024, category: "文化遗产", desc: "三皇之首太昊伏羲氏的陵庙，天下第一陵。"}, {name: "新乡宝泉旅游区", province: "河南", city: "新乡", year: 2024, category: "自然风光", desc: "以碧水丹崖著称。"}, {name: "武汉黄鹤楼公园", province: "湖北", city: "武汉", year: 2007, category: "文化遗产", desc: "“故人西辞黄鹤楼，烟花三月下扬州”。江南三大名楼之首，始建于三国时期。", lat: 30.544, lng: 114.302}, {name: "宜昌三峡大坝-屈原故里旅游区", province: "湖北", city: "宜昌", year: 2007, category: "现代建筑", desc: "世界最大的水利枢纽工程，坝顶高程185米，坝长2309.5米。屈原故里展示了楚文化。", lat: 30.823, lng: 111.003}, {name: "宜昌三峡人家风景区", province: "湖北", city: "宜昌", year: 2011, category: "自然风光", desc: "以三峡民俗文化和自然风光为主题。"}, {name: "十堰武当山风景名胜区", province: "湖北", city: "十堰", year: 2011, category: "自然与文化双遗产", desc: "中国道教圣地，太极拳的发源地。以“五岳之冠”闻名于世，古建筑群被列入世界文化遗产。", lat: 32.4, lng: 111.004}, {name: "恩施神农溪纤夫文化旅游区", province: "湖北", city: "恩施", year: 2011, category: "自然风光", desc: "以纤夫拉纤和峡谷风光著称。"}, {name: "神农架生态旅游区", province: "湖北", city: "神农架", year: 2012, category: "自然风光", desc: "中国唯一以“林区”命名的行政区，以原始森林、金丝猴和“野人”之谜闻名。世界自然遗产地。", lat: 31.553, lng: 110.578}, {name: "武汉东湖生态旅游风景区", province: "湖北", city: "武汉", year: 2013, category: "自然风光", desc: "湖北武汉国家5A级旅游景区。"}, {name: "宜昌清江画廊景区", province: "湖北", city: "宜昌", year: 2013, category: "自然风光", desc: "“八百里清江美如画，三百里画廊在长阳”。清江是土家族的母亲河，沿途风光如画。", lat: 30.469, lng: 111.192}, {name: "武汉木兰文化生态旅游区", province: "湖北", city: "武汉", year: 2014, category: "文化遗产", desc: "以木兰文化为主题的综合性旅游区。"}, {name: "恩施大峡谷景区", province: "湖北", city: "恩施", year: 2015, category: "自然风光", desc: "被誉为“东方科罗拉多”，全长108公里。以“雄、奇、秀、幽、险”著称，有“一炷香”等标志性景观。", lat: 30.452, lng: 109.403}, {name: "咸宁三国赤壁古战场景区", province: "湖北", city: "咸宁", year: 2018, category: "文化遗产", desc: "湖北咸宁国家5A级旅游景区。"}, {name: "襄阳古隆中景区", province: "湖北", city: "襄阳", year: 2019, category: "文化遗产", desc: "三顾茅庐和隆中对的发生地。"}, {name: "恩施腾龙洞景区", province: "湖北", city: "恩施", year: 2020, category: "自然风光", desc: "世界特级溶洞之一。"}, {name: "宜昌三峡大瀑布景区", province: "湖北", city: "宜昌", year: 2022, category: "自然风光", desc: "三峡地区最大的瀑布。"}, {name: "荆门明显陵文化旅游景区", province: "湖北", city: "荆门", year: 2024, category: "文化遗产", desc: "湖北荆门国家5A级旅游景区。"}, {name: "黄冈麻城龟峰山景区", province: "湖北", city: "黄冈", year: 2024, category: "自然风光", desc: "以杜鹃花海闻名。"}, {name: "张家界武陵源-天门山旅游区", province: "湖南", city: "张家界", year: 2007, category: "自然风光", desc: "世界自然遗产，以独特的石英砂岩峰林地貌闻名。“三千翠微峰，八百琉璃水”，《阿凡达》取景地。天门山有世界最长高山客运索道。", lat: 29.317, lng: 110.478}, {name: "衡阳南岳衡山旅游区", province: "湖南", city: "衡阳", year: 2007, category: "自然与文化双遗产", desc: "五岳之南岳，以“五岳独秀”、“中华寿岳”著称。祝融峰海拔1300.2米，为南岳最高峰。", lat: 27.277, lng: 112.723}, {name: "湘潭韶山旅游区", province: "湖南", city: "湘潭", year: 2011, category: "红色旅游", desc: "毛泽东同志的故乡，中国四大革命纪念地之一。毛泽东故居、滴水洞等景点每年吸引数百万游客。", lat: 27.913, lng: 112.527}, {name: "岳阳岳阳楼-君山岛景区", province: "湖南", city: "岳阳", year: 2011, category: "文化遗产", desc: "湖南岳阳国家5A级旅游景区。"}, {name: "长沙岳麓山-橘子洲旅游区", province: "湖南", city: "长沙", year: 2012, category: "自然风光", desc: "岳麓山是南岳衡山72峰之尾峰，“停车坐爱枫林晚”之地。橘子洲是湘江中的冲积沙洲，毛泽东青年艺术雕塑矗立于此。", lat: 28.181, lng: 112.939}, {name: "长沙花明楼景区", province: "湖南", city: "长沙", year: 2013, category: "红色旅游", desc: "刘少奇同志的故居所在地，全国重点文物保护单位。", lat: 28.009, lng: 112.603}, {name: "郴州东江湖旅游区", province: "湖南", city: "郴州", year: 2015, category: "自然风光", desc: "“人间天上一湖水，万千景象在其中”。东江湖水质清澈，小东江晨雾如仙境，有“湘南洞庭”之称。", lat: 25.796, lng: 113.296}, {name: "邵阳崀山景区", province: "湖南", city: "邵阳", year: 2016, category: "自然风光", desc: "中国丹霞地貌的代表，世界自然遗产。以“丹霞之魂，国之瑰宝”著称，辣椒峰、天一巷为标志性景观。", lat: 26.377, lng: 110.824}, {name: "株洲炎帝陵景区", province: "湖南", city: "株洲", year: 2019, category: "文化遗产", desc: "中华民族始祖炎帝神农氏的陵寝。"}, {name: "常德桃花源旅游区", province: "湖南", city: "常德", year: 2020, category: "自然风光", desc: "陶渊明桃花源记原型地。"}, {name: "湘西矮寨·十八洞·德夯大峡谷景区", province: "湖南", city: "湘西", year: 2021, category: "自然风光", desc: "矮寨大桥是世界跨峡谷最大的钢桁梁悬索桥。十八洞村是“精准扶贫”首倡地。", lat: 28.367, lng: 109.593}, {name: "湘西凤凰古城旅游区", province: "湖南", city: "湘西", year: 2024, category: "文化遗产", desc: "中国最美小城，以苗族文化和吊脚楼建筑闻名。"}, {name: "广州长隆旅游度假区", province: "广东", city: "广州", year: 2007, category: "主题乐园", desc: "中国最受欢迎的旅游度假区之一，包含长隆欢乐世界、长隆野生动物世界、长隆水上乐园等。", lat: 23.003, lng: 113.325}, {name: "深圳华侨城旅游度假区", province: "广东", city: "深圳", year: 2007, category: "主题乐园", desc: "包含世界之窗、锦绣中华、欢乐谷、东部华侨城等主题公园，是中国最具规模的文化旅游区之一。", lat: 22.532, lng: 113.98}, {name: "广州白云山风景区", province: "广东", city: "广州", year: 2011, category: "自然风光", desc: "“羊城第一秀”，由30多座山峰组成，主峰摩星岭海拔382米。是广州的“市肺”。", lat: 23.167, lng: 113.295}, {name: "梅州雁南飞茶田景区", province: "广东", city: "梅州", year: 2011, category: "自然风光", desc: "以茶文化为主题的生态旅游区，茶园面积达数千亩。群山环抱，茶田叠翠。", lat: 24.269, lng: 116.17}, {name: "深圳观澜湖休闲旅游区", province: "广东", city: "深圳", year: 2011, category: "主题乐园", desc: "世界最大的高尔夫球会。"}, {name: "清远连州地下河景区", province: "广东", city: "清远", year: 2011, category: "自然风光", desc: "中国最长的地下河溶洞之一，暗河全长1500米。洞内钟乳石千姿百态，“地下银河”名不虚传。", lat: 24.775, lng: 112.376}, {name: "韶关丹霞山景区", province: "广东", city: "韶关", year: 2012, category: "自然风光", desc: "世界自然遗产，丹霞地貌的命名地。以“色如渥丹，灿若明霞”的赤壁丹崖著称。", lat: 24.995, lng: 113.676}, {name: "佛山西樵山景区", province: "广东", city: "佛山", year: 2013, category: "自然风光", desc: "广东四大名山之一，以火山地貌和观音文化闻名。南海观音像高61.9米，是世界上最高的观音坐像。", lat: 22.932, lng: 112.963}, {name: "惠州罗浮山景区", province: "广东", city: "惠州", year: 2013, category: "自然风光", desc: "“岭南第一山”，道教十大洞天之第七洞天。葛洪在此炼丹著书，是中国道教名山。", lat: 23.257, lng: 114.008}, {name: "佛山长鹿旅游休博园", province: "广东", city: "佛山", year: 2014, category: "主题乐园", desc: "以岭南水乡文化为主题的旅游景区。"}, {name: "阳江海陵岛大角湾海上丝路旅游区", province: "广东", city: "阳江", year: 2015, category: "自然风光", desc: "“南海一号”古沉船发现地，大角湾是中国最优质的海滨浴场之一。", lat: 21.564, lng: 111.825}, {name: "中山孙中山故里旅游区", province: "广东", city: "中山", year: 2016, category: "红色旅游", desc: "孙中山先生的故乡，包含孙中山故居纪念馆、中山城等景点。", lat: 22.524, lng: 113.384}, {name: "惠州西湖风景名胜区", province: "广东", city: "惠州", year: 2018, category: "自然风光", desc: "苏东坡曾在此留下“日啖荔枝三百颗，不辞长作岭南人”的名句。以“五湖六桥八景”著称。", lat: 23.097, lng: 114.395}, {name: "肇庆星湖风景名胜区", province: "广东", city: "肇庆", year: 2019, category: "自然风光", desc: "由七星岩和鼎湖山两大景区组成。七星岩以峰林、溶洞、湖泊著称，鼎湖山是中国第一个国家级自然保护区。", lat: 23.078, lng: 112.479}, {name: "江门开平碉楼文化旅游区", province: "广东", city: "江门", year: 2020, category: "文化遗产", desc: "世界文化遗产，华侨文化的典型代表。"}, {name: "河源万绿湖风景区", province: "广东", city: "河源", year: 2024, category: "自然风光", desc: "华南地区最大的人工湖。"}, {name: "桂林漓江景区", province: "广西", city: "桂林", year: 2007, category: "自然风光", desc: "“桂林山水甲天下”，漓江风光是桂林山水的精华。从桂林至阳朔83公里水程，是世界上规模最大、风景最优美的岩溶山水游览区。", lat: 24.914, lng: 110.292}, {name: "桂林独秀峰·靖江王城景区", province: "广西", city: "桂林", year: 2012, category: "文化遗产", desc: "广西桂林国家5A级旅游景区。"}, {name: "南宁青秀山风景旅游区", province: "广西", city: "南宁", year: 2014, category: "自然风光", desc: "“绿城”南宁的绿肺，有“山不高而秀，水不深而清”之称。以热带、亚热带植物景观为主。", lat: 22.784, lng: 108.369}, {name: "桂林两江四湖·象山景区", province: "广西", city: "桂林", year: 2017, category: "自然风光", desc: "象鼻山是桂林的城徽，因整座山形似一头驻足漓江边临流饮水的大象而得名。两江四湖构成了桂林市区的环城水系。", lat: 25.267, lng: 110.288}, {name: "崇左德天跨国瀑布景区", province: "广西", city: "崇左", year: 2018, category: "自然风光", desc: "亚洲第一、世界第四大跨国瀑布。德天瀑布与越南板约瀑布相连，气势磅礴，蔚为壮观。", lat: 22.854, lng: 106.721}, {name: "百色起义纪念园", province: "广西", city: "百色", year: 2019, category: "红色旅游", desc: "1929年百色起义的发生地，包含百色起义纪念馆、红七军军部旧址等。", lat: 23.899, lng: 106.618}, {name: "北海涠洲岛南湾鳄鱼山景区", province: "广西", city: "北海", year: 2020, category: "自然风光", desc: "广西北海国家5A级旅游景区。"}, {name: "贺州黄姚古镇景区", province: "广西", city: "贺州", year: 2022, category: "文化遗产", desc: "以喀斯特地貌和明清建筑群著称的古镇。"}, {name: "柳州程阳八寨景区", province: "广西", city: "柳州", year: 2024, category: "文化遗产", desc: "侗族聚居地，以程阳风雨桥闻名。"}, {name: "崇左花山岩画景区", province: "广西", city: "崇左", year: 2024, category: "文化遗产", desc: "世界文化遗产，战国至东汉时期骆越人留下的珍贵文化遗产。"}, {name: "三亚南山文化旅游区", province: "海南", city: "三亚", year: 2007, category: "文化遗产", desc: "以佛教文化为主题，南山海上观音高108米，是世界上最高的海上观音像。", lat: 18.297, lng: 109.207}, {name: "三亚南山大小洞天旅游区", province: "海南", city: "三亚", year: 2007, category: "自然风光", desc: "中国最南端的道家文化旅游胜地，以秀丽的海景、山景和石景号称琼崖第一山水名胜。", lat: 18.288, lng: 109.189}, {name: "保亭呀诺达雨林文化旅游区", province: "海南", city: "保亭", year: 2012, category: "自然风光", desc: "中国唯一地处北纬18度的热带雨林，以热带雨林景观和黎苗族文化为特色。", lat: 18.528, lng: 109.671}, {name: "陵水分界洲岛旅游区", province: "海南", city: "陵水", year: 2013, category: "自然风光", desc: "海南岛南北气候的分界线，海水清澈度极高。是潜水和观赏珊瑚的绝佳去处。", lat: 18.575, lng: 110.168}, {name: "保亭槟榔谷黎苗文化旅游区", province: "海南", city: "保亭", year: 2015, category: "文化遗产", desc: "以展示海南黎族和苗族文化为核心的景区。"}, {name: "三亚蜈支洲岛旅游区", province: "海南", city: "三亚", year: 2016, category: "自然风光", desc: "中国著名的潜水胜地，海水能见度6-27米。岛上植被丰富，被称为“中国的马尔代夫”。", lat: 18.309, lng: 109.761}, {name: "三亚天涯海角游览区", province: "海南", city: "三亚", year: 2024, category: "自然风光", desc: "海南标志性景区，“天涯”、“海角”、“南天一柱”等巨石突兀，气势磅礴。", lat: 18.288, lng: 109.344}, {name: "大足石刻景区", province: "重庆", city: "大足", year: 2007, category: "文化遗产", desc: "重庆大足国家5A级旅游景区。"}, {name: "巫山小三峡-小小三峡", province: "重庆", city: "巫山", year: 2007, category: "自然风光", desc: "重庆巫山国家5A级旅游景区。"}, {name: "武隆喀斯特旅游区", province: "重庆", city: "武隆", year: 2011, category: "自然风光", desc: "重庆武隆国家5A级旅游景区。"}, {name: "酉阳桃花源景区", province: "重庆", city: "酉阳", year: 2012, category: "自然风光", desc: "重庆酉阳国家5A级旅游景区。"}, {name: "万盛黑山谷-龙鳞石海风景区", province: "重庆", city: "万盛", year: 2012, category: "自然风光", desc: "重庆万盛国家5A级旅游景区。"}, {name: "南川金佛山景区", province: "重庆", city: "南川", year: 2013, category: "自然风光", desc: "重庆南川国家5A级旅游景区。"}, {name: "江津四面山景区", province: "重庆", city: "江津", year: 2015, category: "自然风光", desc: "重庆江津国家5A级旅游景区。"}, {name: "云阳龙缸景区", province: "重庆", city: "云阳", year: 2017, category: "自然风光", desc: "重庆云阳国家5A级旅游景区。"}, {name: "彭水阿依河景区", province: "重庆", city: "彭水", year: 2019, category: "自然风光", desc: "以苗族文化和峡谷漂流为特色。"}, {name: "黔江濯水景区", province: "重庆", city: "黔江", year: 2020, category: "自然风光", desc: "以土家族和苗族文化为特色的古镇。"}, {name: "奉节白帝城·瞿塘峡景区", province: "重庆", city: "奉节", year: 2022, category: "文化遗产", desc: "朝辞白帝彩云间，三峡起点。"}, {name: "涪陵武陵山大裂谷景区", province: "重庆", city: "涪陵", year: 2024, category: "自然风光", desc: "以喀斯特地质奇观著称的峡谷。"}, {name: "成都青城山-都江堰旅游景区", province: "四川", city: "成都", year: 2007, category: "自然与文化双遗产", desc: "青城山是中国道教发源地之一，以“青城天下幽”著称。都江堰是全世界迄今为止年代最久、唯一留存、仍在使用的以无坝引水为特征的宏大水利工程。", lat: 31.003, lng: 103.596}, {name: "乐山峨眉山景区", province: "四川", city: "乐山", year: 2007, category: "自然与文化双遗产", desc: "中国四大佛教名山之一，普贤菩萨的道场。以“峨眉天下秀”著称，金顶云海、日出、佛光为三绝。", lat: 29.568, lng: 103.336}, {name: "阿坝九寨沟旅游景区", province: "四川", city: "阿坝", year: 2007, category: "自然风光", desc: "世界自然遗产，以翠海、叠瀑、彩林、雪峰、蓝冰、藏情“六绝”著称。“九寨归来不看水”。", lat: 33.26, lng: 103.917}, {name: "乐山乐山大佛景区", province: "四川", city: "乐山", year: 2011, category: "文化遗产", desc: "四川乐山国家5A级旅游景区。"}, {name: "阿坝黄龙景区", province: "四川", city: "阿坝", year: 2012, category: "自然风光", desc: "世界自然遗产，以彩池、雪山、峡谷、森林“四绝”著称。黄龙沟的钙华彩池世界罕见。", lat: 32.745, lng: 103.826}, {name: "绵阳北川羌城旅游区", province: "四川", city: "绵阳", year: 2013, category: "文化遗产", desc: "“5·12”特大地震重建后形成的地震纪念地和羌族文化旅游区，包含地震遗址和羌族民俗文化。", lat: 31.826, lng: 104.442}, {name: "阿坝汶川特别旅游区", province: "四川", city: "阿坝", year: 2013, category: "红色旅游", desc: "“5·12”汶川地震的核心区域，以地震遗址保护和重建展示为主要内容。", lat: 31.004, lng: 103.588}, {name: "南充阆中古城旅游景区", province: "四川", city: "南充", year: 2013, category: "文化遗产", desc: "四川南充国家5A级旅游景区。"}, {name: "广安邓小平故里旅游区", province: "四川", city: "广安", year: 2013, category: "红色旅游", desc: "邓小平同志的出生地和青少年时期生活的地方。包含邓小平故居、邓小平纪念馆等。", lat: 30.483, lng: 106.64}, {name: "广元剑门蜀道剑门关旅游景区", province: "四川", city: "广元", year: 2015, category: "文化遗产", desc: "一夫当关万夫莫开的剑门关。"}, {name: "南充朱德故里景区", province: "四川", city: "南充", year: 2016, category: "红色旅游", desc: "朱德元帅的出生地。"}, {name: "甘孜海螺沟景区", province: "四川", city: "甘孜", year: 2017, category: "自然风光", desc: "以低海拔现代冰川著称，冰川舌伸入原始森林6公里。大冰瀑布高1080米、宽1100米，是世界最大的冰瀑布之一。", lat: 29.597, lng: 101.963}, {name: "雅安碧峰峡旅游景区", province: "四川", city: "雅安", year: 2019, category: "自然风光", desc: "四川雅安国家5A级旅游景区。"}, {name: "巴中光雾山旅游景区", province: "四川", city: "巴中", year: 2020, category: "自然风光", desc: "亚洲最大的红叶观赏区。"}, {name: "甘孜稻城亚丁旅游景区", province: "四川", city: "甘孜", year: 2020, category: "自然风光", desc: "最后的香格里拉，以三座神山闻名。"}, {name: "成都安仁古镇景区", province: "四川", city: "成都", year: 2022, category: "文化遗产", desc: "中国博物馆小镇，以刘氏庄园博物馆和建川博物馆聚落闻名。保存了大量民国时期建筑。", lat: 30.525, lng: 103.578}, {name: "阿坝四姑娘山景区", province: "四川", city: "阿坝", year: 2024, category: "自然风光", desc: "蜀山皇后，主峰幺妹峰海拔6250米。"}, {name: "成都天台山景区", province: "四川", city: "成都", year: 2024, category: "自然风光", desc: "以玩水著称的避暑胜地。"}, {name: "安顺黄果树风景名胜区", province: "贵州", city: "安顺", year: 2007, category: "自然风光", desc: "以黄果树大瀑布为中心，瀑布高77.8米、宽101米，是中国最大的瀑布。周围分布着18个大小瀑布。", lat: 25.992, lng: 105.668}, {name: "安顺龙宫风景名胜区", province: "贵州", city: "安顺", year: 2007, category: "自然风光", desc: "以水旱溶洞、洞穴瀑布和喀斯特地貌为主要特色。龙宫中心的漩水塘是世界上最大的天然辐射性氡泉。", lat: 26.055, lng: 105.747}, {name: "毕节百里杜鹃景区", province: "贵州", city: "毕节", year: 2013, category: "自然风光", desc: "世界上面积最大的原始杜鹃林带，总面积125.8平方公里。每年3-5月杜鹃花竞相开放，绵延百里。", lat: 27.187, lng: 105.894}, {name: "黔南荔波樟江景区", province: "贵州", city: "黔南", year: 2015, category: "自然风光", desc: "世界自然遗产“中国南方喀斯特”的核心区域。以水上森林、鸳鸯湖、翠谷瀑布著称。", lat: 25.401, lng: 107.893}, {name: "贵阳青岩古镇景区", province: "贵州", city: "贵阳", year: 2017, category: "文化遗产", desc: "贵州四大古镇之一，建于明洪武十年（1378年）。古镇依山就势，城墙用巨石筑于悬崖之上。", lat: 26.411, lng: 106.655}, {name: "铜仁梵净山景区", province: "贵州", city: "铜仁", year: 2018, category: "自然风光", desc: "世界自然遗产，以佛教文化和原始生态著称。红云金顶海拔2336米，山峰一分为二，由天桥连接。", lat: 27.864, lng: 108.685}, {name: "黔东南镇远古城景区", province: "贵州", city: "黔东南", year: 2019, category: "文化遗产", desc: "中国历史文化名城，有2000多年历史。㵲阳河穿城而过，古城依山傍水，融多元文化于一体。", lat: 27.05, lng: 108.429}, {name: "遵义赤水丹霞旅游区", province: "贵州", city: "遵义", year: 2020, category: "自然风光", desc: "世界自然遗产“中国丹霞”的组成部分。赤水大瀑布高76米、宽80米，是长江流域第一大瀑布。", lat: 28.588, lng: 105.697}, {name: "毕节织金洞景区", province: "贵州", city: "毕节", year: 2022, category: "自然风光", desc: "中国溶洞之王。"}, {name: "黔西南万峰林景区", province: "贵州", city: "黔西南", year: 2024, category: "自然风光", desc: "天下山峰何其多，唯有此处峰成林。"}, {name: "昆明石林风景名胜区", province: "云南", city: "昆明", year: 2007, category: "自然风光", desc: "世界自然遗产，以喀斯特地貌（岩溶地貌）著称。石林以“雄、奇、险、秀、幽”著称，被誉为“天下第一奇观”。", lat: 24.775, lng: 103.328}, {name: "丽江玉龙雪山景区", province: "云南", city: "丽江", year: 2007, category: "自然风光", desc: "北半球最南的大雪山，主峰扇子陡海拔5596米。雪山十三峰终年积雪，如一条矫健的玉龙。", lat: 27.095, lng: 100.202}, {name: "丽江古城景区", province: "云南", city: "丽江", year: 2011, category: "文化遗产", desc: "世界文化遗产，始建于宋末元初。古城以四方街为中心，以红色角砾岩铺就街道，保存了浓郁的纳西族风情。", lat: 26.872, lng: 100.233}, {name: "大理崇圣寺三塔文化旅游区", province: "云南", city: "大理", year: 2011, category: "文化遗产", desc: "大理国时期的皇家寺院，三塔鼎立是大理的标志性景观。主塔千寻塔高69.13米，建于唐代。", lat: 25.706, lng: 100.144}, {name: "西双版纳热带植物园", province: "云南", city: "西双版纳", year: 2011, category: "自然风光", desc: "云南西双版纳国家5A级旅游景区。"}, {name: "迪庆普达措国家公园", province: "云南", city: "迪庆", year: 2012, category: "自然风光", desc: "中国大陆第一个国家公园，以碧塔海和属都湖为核心。集高原湖泊、草甸牧场、原始森林于一体。", lat: 27.825, lng: 99.975}, {name: "昆明世博园景区", province: "云南", city: "昆明", year: 2016, category: "园林景观", desc: "云南昆明国家5A级旅游景区。"}, {name: "保山火山热海旅游区", province: "云南", city: "保山", year: 2016, category: "自然风光", desc: "云南保山国家5A级旅游景区。"}, {name: "文山普者黑景区", province: "云南", city: "文山", year: 2020, category: "自然风光", desc: "以“水上田园、彝家水乡、荷花世界、岩溶湿地”著称。《爸爸去哪儿》和《三生三世十里桃花》取景地。", lat: 24.128, lng: 104.138}, {name: "腾冲和顺古镇景区", province: "云南", city: "保山", year: 2024, category: "文化遗产", desc: "中国十大魅力名镇，中原文化和南亚文化交融。"}, {name: "拉萨布达拉宫景区", province: "西藏", city: "拉萨", year: 2013, category: "文化遗产", desc: "世界文化遗产，坐落于拉萨市中心的红山之上。始建于公元7世纪，是世界上海拔最高的宫堡式建筑群。", lat: 29.656, lng: 91.117}, {name: "拉萨大昭寺景区", province: "西藏", city: "拉萨", year: 2013, category: "文化遗产", desc: "西藏拉萨国家5A级旅游景区。"}, {name: "林芝巴松措景区", province: "西藏", city: "林芝", year: 2017, category: "自然风光", desc: "藏传佛教红教的圣湖，湖面海拔3480米。湖水碧绿如玉，四周雪山环绕。", lat: 30.011, lng: 93.857}, {name: "日喀则扎什伦布寺景区", province: "西藏", city: "日喀则", year: 2017, category: "文化遗产", desc: "历代班禅驻锡之地，藏传佛教格鲁派六大寺院之一。"}, {name: "林芝雅鲁藏布大峡谷景区", province: "西藏", city: "林芝", year: 2020, category: "自然风光", desc: "世界第一大峡谷，全长504.6公里，最深处6009米。以南迦巴瓦峰和雅鲁藏布江大拐弯最为壮观。", lat: 29.76, lng: 94.96}, {name: "西安秦始皇帝陵博物院景区", province: "陕西", city: "西安", year: 2007, category: "文化遗产", desc: "陕西西安国家5A级旅游景区。"}, {name: "西安华清宫景区", province: "陕西", city: "西安", year: 2007, category: "文化遗产", desc: "陕西西安国家5A级旅游景区。"}, {name: "延安黄帝陵景区", province: "陕西", city: "延安", year: 2007, category: "文化遗产", desc: "中华民族始祖轩辕黄帝的陵寝，被称为“天下第一陵”。是中华儿女祭拜祖先的重要场所。", lat: 35.583, lng: 109.272}, {name: "西安大雁塔-大唐芙蓉园景区", province: "陕西", city: "西安", year: 2011, category: "文化遗产", desc: "大雁塔是唐代高僧玄奘为保存经卷而建，是中国楼阁式砖塔的典型代表。大唐芙蓉园展示了盛唐文化。", lat: 34.218, lng: 108.963}, {name: "渭南华山风景名胜区", province: "陕西", city: "渭南", year: 2011, category: "自然风光", desc: "五岳之西岳，以“奇险天下第一山”著称。长空栈道、鹞子翻身等著名险道令人心惊。", lat: 34.483, lng: 110.076}, {name: "宝鸡法门寺佛文化景区", province: "陕西", city: "宝鸡", year: 2014, category: "文化遗产", desc: "因安置释迦牟尼佛指骨舍利而成为佛教圣地。法门寺地宫出土了大量唐代珍贵文物。", lat: 34.472, lng: 107.904}, {name: "商洛金丝峡景区", province: "陕西", city: "商洛", year: 2015, category: "自然风光", desc: "秦岭峡谷地貌的典型代表，以窄、幽、秀、奇著称。峡谷全长10.5公里，集峰、石、洞、林、泉于一体。", lat: 33.322, lng: 110.608}, {name: "宝鸡太白山旅游景区", province: "陕西", city: "宝鸡", year: 2016, category: "自然风光", desc: "秦岭最高峰，海拔3771米。"}, {name: "西安城墙·碑林历史文化景区", province: "陕西", city: "西安", year: 2018, category: "文化遗产", desc: "陕西西安国家5A级旅游景区。"}, {name: "延安革命纪念地景区", province: "陕西", city: "延安", year: 2019, category: "红色旅游", desc: "中国革命的圣地，包含枣园、杨家岭、王家坪等革命旧址。延安精神的发源地。", lat: 36.595, lng: 109.491}, {name: "西安大明宫旅游景区", province: "陕西", city: "西安", year: 2020, category: "文化遗产", desc: "唐代的政治中心和国家象征。"}, {name: "延安延川黄河乾坤湾景区", province: "陕西", city: "延安", year: 2024, category: "自然风光", desc: "天下黄河第一湾。"}, {name: "咸阳乾陵景区", province: "陕西", city: "咸阳", year: 2024, category: "文化遗产", desc: "唐高宗与武则天的合葬陵。"}, {name: "嘉峪关文物景区", province: "甘肃", city: "嘉峪关", year: 2007, category: "文化遗产", desc: "甘肃嘉峪关国家5A级旅游景区。"}, {name: "平凉崆峒山风景名胜区", province: "甘肃", city: "平凉", year: 2007, category: "自然风光", desc: "道教名山，黄帝问道于广成子之地。有“西来第一山”之誉，以奇险灵秀著称。", lat: 35.557, lng: 106.517}, {name: "天水麦积山景区", province: "甘肃", city: "天水", year: 2011, category: "文化遗产", desc: "甘肃天水国家5A级旅游景区。"}, {name: "敦煌鸣沙山月牙泉景区", province: "甘肃", city: "敦煌", year: 2015, category: "自然风光", desc: "沙泉共处，妙造天成。鸣沙山以沙动成响得名，月牙泉千年不涸，被称为“沙漠第一泉”。", lat: 40.087, lng: 94.662}, {name: "张掖七彩丹霞景区", province: "甘肃", city: "张掖", year: 2019, category: "自然风光", desc: "中国最美的丹霞地貌之一，以色彩斑斓著称。红色、黄色、白色、绿蓝色等色调顺山势起伏。", lat: 38.917, lng: 100.114}, {name: "临夏炳灵寺世界文化遗产旅游区", province: "甘肃", city: "临夏", year: 2020, category: "文化遗产", desc: "始建于西秦建弘元年（420年），以石窟艺术著称。石窟开凿在黄河北岸大寺沟的红色砂岩上。", lat: 35.826, lng: 103.189}, {name: "陇南官鹅沟景区", province: "甘肃", city: "陇南", year: 2022, category: "自然风光", desc: "高山湖泊、峡谷瀑布，小九寨之称。"}, {name: "甘南冶力关旅游区", province: "甘肃", city: "甘南", year: 2024, category: "自然风光", desc: "以丹霞地貌和藏族风情著称。"}, {name: "青海湖景区", province: "青海", city: "海南州", year: 2011, category: "自然风光", desc: "中国最大的内陆湖泊和咸水湖，湖面海拔3196米。环湖千亩油菜花是青海湖最壮观的景观。", lat: 36.863, lng: 100.193}, {name: "西宁塔尔寺景区", province: "青海", city: "西宁", year: 2012, category: "文化遗产", desc: "藏传佛教格鲁派六大寺院之一，宗喀巴大师的诞生地。以酥油花、壁画和堆绣“三绝”闻名。", lat: 36.506, lng: 101.569}, {name: "海东互助土族故土园景区", province: "青海", city: "海东", year: 2017, category: "文化遗产", desc: "以土族民俗文化为核心，展示土族独特的服饰、饮食、婚俗等文化。彩虹之乡，土族家园。", lat: 36.841, lng: 101.955}, {name: "石嘴山沙湖旅游景区", province: "宁夏", city: "石嘴山", year: 2007, category: "自然风光", desc: "融江南水乡与大漠风光于一体，沙水相依的独特景观。湖面面积45平方公里，沙漠面积22.52平方公里。", lat: 38.825, lng: 106.374}, {name: "中卫沙坡头旅游景区", province: "宁夏", city: "中卫", year: 2007, category: "自然风光", desc: "“大漠孤烟直，长河落日圆”的所在地。集大漠、黄河、高山、绿洲于一体，被誉为“世界垄断性旅游资源”。", lat: 37.456, lng: 104.969}, {name: "银川镇北堡西部影城", province: "宁夏", city: "银川", year: 2011, category: "主题乐园", desc: "宁夏银川国家5A级旅游景区。"}, {name: "银川水洞沟旅游区", province: "宁夏", city: "银川", year: 2015, category: "文化遗产", desc: "中国史前考古的发祥地，发现了距今4万年的旧石器时代遗址。被誉为“中国史前考古的摇篮”。", lat: 38.313, lng: 106.553}, {name: "吴忠青铜峡黄河大峡谷旅游区", province: "宁夏", city: "吴忠", year: 2024, category: "自然风光", desc: "宁夏吴忠国家5A级旅游景区。"}, {name: "昌吉天山天池风景名胜区", province: "新疆", city: "昌吉", year: 2007, category: "自然风光", desc: "新疆昌吉国家5A级旅游景区。"}, {name: "吐鲁番葡萄沟景区", province: "新疆", city: "吐鲁番", year: 2007, category: "自然风光", desc: "新疆吐鲁番国家5A级旅游景区。"}, {name: "阿勒泰喀纳斯景区", province: "新疆", city: "阿勒泰", year: 2007, category: "自然风光", desc: "“人间仙境”喀纳斯湖，湖水来自冰川融水，随季节和天气变化呈现不同颜色。湖怪传说增添了神秘色彩。", lat: 48.716, lng: 87.038}, {name: "伊犁那拉提旅游风景区", province: "新疆", city: "伊犁", year: 2011, category: "自然风光", desc: "新疆伊犁国家5A级旅游景区。"}, {name: "阿勒泰可可托海景区", province: "新疆", city: "阿勒泰", year: 2012, category: "自然风光", desc: "以峡谷河流、山石林地、矿产资源闻名。三号矿坑曾为国偿还了巨额外债。额尔齐斯大峡谷壮美无比。", lat: 47.215, lng: 89.82}, {name: "乌鲁木齐天山大峡谷景区", province: "新疆", city: "乌鲁木齐", year: 2013, category: "自然风光", desc: "新疆乌鲁木齐国家5A级旅游景区。"}, {name: "巴音郭楞博斯腾湖景区", province: "新疆", city: "巴州", year: 2014, category: "自然风光", desc: "中国最大的内陆淡水湖，水域面积1228平方公里。湖面烟波浩渺，有“西塞明珠”之称。", lat: 41.771, lng: 86.824}, {name: "喀什噶尔老城景区", province: "新疆", city: "喀什", year: 2015, category: "文化遗产", desc: "中国唯一以伊斯兰文化为特色的迷宫式城市街区。2000多年历史，是古丝绸之路的重要驿站。", lat: 39.468, lng: 75.99}, {name: "伊犁喀拉峻景区", province: "新疆", city: "伊犁", year: 2016, category: "自然风光", desc: "新疆伊犁国家5A级旅游景区。"}, {name: "克拉玛依世界魔鬼城景区", province: "新疆", city: "克拉玛依", year: 2020, category: "自然风光", desc: "以雅丹地貌著称，风蚀形成奇特地貌。"}, {name: "博尔塔拉赛里木湖风景名胜区", province: "新疆", city: "博州", year: 2021, category: "自然风光", desc: "新疆博州国家5A级旅游景区。"}, {name: "喀什帕米尔旅游区", province: "新疆", city: "喀什", year: 2024, category: "自然风光", desc: "世界屋脊帕米尔高原，中巴边境风光。"}, {name: "伊犁特克斯八卦城景区", province: "新疆", city: "伊犁", year: 2024, category: "文化遗产", desc: "世界唯一保存完整的八卦城。"}, {name: "阿勒泰白沙湖景区", province: "新疆", city: "阿勒泰", year: 2024, category: "自然风光", desc: "沙漠中的绿洲湖泊。"}, {name: "澳门历史城区", province: "澳门", city: "澳门", year: 2024, category: "文化遗产", desc: "世界文化遗产，包含22座建筑和8个广场前地。见证了东西方建筑艺术和文化的交融。", lat: 22.193, lng: 113.54}, {name: "香港迪士尼乐园", province: "香港", city: "香港", year: 2024, category: "主题乐园", desc: "亚洲第五座迪士尼乐园，包含美国小镇大街、幻想世界、明日世界等主题园区。", lat: 22.313, lng: 114.042}];
-const categories=[...new Set(spots.map(s=>s.category))].sort();
-const provinces=[...new Set(spots.map(s=>s.province))].sort();
-const years=[...new Set(spots.map(s=>s.year))].sort((a,b)=>b-a);
 
 const filterProvince=document.getElementById('filterProvince');
 const filterCategory=document.getElementById('filterCategory');
 const filterYear=document.getElementById('filterYear');
 const searchInput=document.getElementById('searchInput');
 const grid=document.getElementById('grid');
-const resultInfo=document.getElementById('resultInfo');
 const noResult=document.getElementById('noResult');
 const paginationEl=document.getElementById('pagination');
 const listViewBtn=document.getElementById('listViewBtn');
@@ -303,67 +324,17 @@ const mapTooltip=document.getElementById('mapTooltip');
 const mapSummary=document.getElementById('mapSummary');
 const mapEmpty=document.getElementById('mapEmpty');
 
-provinces.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;filterProvince.appendChild(o)});
-categories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;filterCategory.appendChild(o)});
-years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'年';filterYear.appendChild(o)});
-
-document.getElementById('totalCount').textContent=spots.length;
-document.getElementById('provinceCount').textContent=provinces.length;
-document.getElementById('categoryCount').textContent=categories.length;
-document.getElementById('yearSpan').textContent=years[years.length-1]+'-'+years[0];
 
 const ITEMS_PER_PAGE=20;
 let currentPage=1;
 let currentView='list';
 
 const MAP_BASE_VIEW={x:0,y:0,w:1000,h:640};
+const MAP_MIN_VIEW={w:45,h:32};
 let mapView={...MAP_BASE_VIEW};
 let mapDragging=false;
 let mapDragStart=null;
 const MAP_NS='http://www.w3.org/2000/svg';
-
-const provinceCenters={
-  北京:[116.4,39.9],天津:[117.2,39.1],河北:[114.5,38.0],山西:[112.55,37.87],内蒙古:[111.75,40.84],
-  辽宁:[123.43,41.8],吉林:[125.32,43.9],黑龙江:[126.64,45.75],上海:[121.47,31.23],江苏:[118.78,32.04],
-  浙江:[120.15,30.27],安徽:[117.28,31.86],福建:[119.3,26.08],江西:[115.86,28.68],山东:[117.0,36.65],
-  河南:[113.62,34.75],湖北:[114.3,30.6],湖南:[112.98,28.2],广东:[113.27,23.13],广西:[108.32,22.82],
-  海南:[110.35,20.02],重庆:[106.55,29.56],四川:[104.06,30.67],贵州:[106.63,26.65],云南:[102.71,25.04],
-  西藏:[91.13,29.65],陕西:[108.94,34.34],甘肃:[103.82,36.06],青海:[101.78,36.62],宁夏:[106.27,38.47],
-  新疆:[87.62,43.82],香港:[114.17,22.32],澳门:[113.54,22.2],台湾:[121.0,23.7]
-};
-
-const cityCenters={
-  '北京|通州':[116.66,39.91],'天津|天津':[117.2,39.12],'河北|承德':[117.94,40.98],'河北|衡水':[115.67,37.74],
-  '山西|长治':[113.12,36.2],'山西|太原':[112.55,37.87],'内蒙古|呼伦贝尔':[119.77,49.22],'内蒙古|兴安盟':[122.04,46.08],
-  '内蒙古|赤峰':[118.89,42.26],'内蒙古|呼和浩特':[111.75,40.84],'辽宁|大连':[121.61,38.91],'辽宁|盘锦':[122.07,41.12],
-  '吉林|通化':[125.94,41.73],'吉林|松原':[124.82,45.14],'吉林|白城':[122.84,45.62],'黑龙江|伊春':[128.84,47.73],
-  '黑龙江|漠河':[122.54,52.97],'黑龙江|鸡西':[130.97,45.3],'黑龙江|齐齐哈尔':[123.92,47.35],'江苏|泰州':[119.92,32.46],
-  '江苏|淮安':[119.02,33.61],'江苏|盐城':[120.16,33.35],'江苏|徐州':[117.18,34.26],'江苏|宿迁':[118.28,33.96],
-  '浙江|衢州':[118.87,28.94],'安徽|黄山':[118.34,29.71],'安徽|安庆':[117.05,30.53],'安徽|滁州':[118.32,32.3],
-  '福建|三明':[117.64,26.27],'福建|莆田':[119.0,25.45],'江西|南昌':[115.86,28.68],'江西|萍乡':[113.85,27.62],
-  '山东|东营':[118.67,37.43],'山东|淄博':[118.05,36.81],'河南|郑州':[113.62,34.75],'河南|平顶山':[113.19,33.77],
-  '河南|南阳':[112.53,32.99],'河南|驻马店':[114.02,33.01],'河南|商丘':[115.65,34.44],'河南|周口':[114.65,33.62],
-  '湖北|咸宁':[114.32,29.84],'湖北|襄阳':[112.12,32.01],'湖北|荆门':[112.2,31.04],'湖北|黄冈':[114.87,30.45],
-  '湖南|岳阳':[113.13,29.36],'湖南|株洲':[113.13,27.83],'湖南|常德':[111.69,29.04],'广东|江门':[113.08,22.58],
-  '广东|河源':[114.7,23.74],'广西|北海':[109.12,21.48],'广西|贺州':[111.57,24.4],'广西|柳州':[109.42,24.33],
-  '重庆|大足':[105.72,29.7],'重庆|巫山':[109.88,31.08],'重庆|武隆':[107.76,29.33],'重庆|酉阳':[108.77,28.84],
-  '重庆|万盛':[106.93,28.96],'重庆|南川':[107.1,29.16],'重庆|江津':[106.26,29.29],'重庆|云阳':[108.7,30.93],
-  '重庆|彭水':[108.17,29.29],'重庆|黔江':[108.77,29.53],'重庆|奉节':[109.47,31.02],'重庆|涪陵':[107.39,29.7],
-  '四川|南充':[106.08,30.79],'四川|广元':[105.84,32.44],'四川|雅安':[103.0,29.98],'四川|巴中':[106.75,31.86],
-  '贵州|黔西南':[104.9,25.09],'云南|西双版纳':[100.8,22.0],'云南|保山':[99.17,25.12],'西藏|日喀则':[88.88,29.27],
-  '陕西|咸阳':[108.7,34.33],'甘肃|嘉峪关':[98.29,39.77],'甘肃|天水':[105.72,34.58],'甘肃|陇南':[104.92,33.4],
-  '甘肃|甘南':[102.91,34.99],'宁夏|吴忠':[106.2,37.99],'新疆|昌吉':[87.31,44.01],'新疆|吐鲁番':[89.19,42.95],
-  '新疆|伊犁':[81.32,43.92],'新疆|乌鲁木齐':[87.62,43.82],'新疆|克拉玛依':[84.89,45.58],'新疆|博州':[82.07,44.9]
-};
-
-const cityAverages=spots.reduce((acc,s)=>{
-  if(Number.isFinite(s.lat)&&Number.isFinite(s.lng)){
-    const key=s.province+'|'+s.city;
-    acc[key]=acc[key]||{lng:0,lat:0,count:0};
-    acc[key].lng+=s.lng;acc[key].lat+=s.lat;acc[key].count++;
-  }
-  return acc;
-},{});
 
 function projectCoord(lng,lat){
   const x=(lng-73.2)/(135.2-73.2)*1000;
@@ -371,30 +342,19 @@ function projectCoord(lng,lat){
   return {x,y};
 }
 
-function hashNum(text){
-  let h=0;
-  for(let i=0;i<text.length;i++)h=(h*31+text.charCodeAt(i))>>>0;
-  return h;
-}
-
 function getSpotCoord(spot){
-  if(Number.isFinite(spot.lat)&&Number.isFinite(spot.lng))return {lng:spot.lng,lat:spot.lat,source:spot.coordSource||'精确坐标',estimated:false};
-  const key=spot.province+'|'+spot.city;
-  if(cityAverages[key])return {lng:cityAverages[key].lng/cityAverages[key].count,lat:cityAverages[key].lat/cityAverages[key].count,source:'同城估算',estimated:true};
-  if(cityCenters[key])return {lng:cityCenters[key][0],lat:cityCenters[key][1],source:'城市中心',estimated:true};
-  const pv=provinceCenters[spot.province]||[104,35];
-  return {lng:pv[0],lat:pv[1],source:'省份中心',estimated:true};
+  const coord=getCanonicalCoord(spot);
+  if(!coord)return null;
+  return {lng:coord.lng,lat:coord.lat,source:coord.source,estimated:false};
 }
 
 function getMapPoint(spot){
   const coord=getSpotCoord(spot);
-  const h=hashNum(spot.name+spot.city);
-  const radius=coord.estimated?4.5+(h%4):1.6;
-  const angle=(h%360)*Math.PI/180;
+  if(!coord)return null;
   const p=projectCoord(coord.lng,coord.lat);
   return {
-    x:p.x+Math.cos(angle)*radius,
-    y:p.y+Math.sin(angle)*radius,
+    x:p.x,
+    y:p.y,
     source:coord.source,
     estimated:coord.estimated
   };
@@ -414,8 +374,8 @@ function setView(view){
 
 function setMapViewBox(next){
   const maxW=1000,maxH=640;
-  const w=Math.max(120,Math.min(maxW,next.w));
-  const h=Math.max(90,Math.min(maxH,next.h));
+  const w=Math.max(MAP_MIN_VIEW.w,Math.min(maxW,next.w));
+  const h=Math.max(MAP_MIN_VIEW.h,Math.min(maxH,next.h));
   const x=Math.max(0,Math.min(maxW-w,next.x));
   const y=Math.max(0,Math.min(maxH-h,next.y));
   mapView={x,y,w,h};
@@ -425,7 +385,8 @@ function setMapViewBox(next){
 
 function zoomMap(factor,center){
   center=center||{x:mapView.x+mapView.w/2,y:mapView.y+mapView.h/2};
-  const nw=mapView.w*factor,nh=mapView.h*factor;
+  const nw=Math.max(MAP_MIN_VIEW.w,Math.min(1000,mapView.w*factor));
+  const nh=Math.max(MAP_MIN_VIEW.h,Math.min(640,mapView.h*factor));
   setMapViewBox({
     x:center.x-(center.x-mapView.x)*(nw/mapView.w),
     y:center.y-(center.y-mapView.y)*(nh/mapView.h),
@@ -438,12 +399,44 @@ function updateMapPointSizes(){
   const pointScale=Math.max(mapView.w/1000,mapView.h/640);
   chinaMap.querySelectorAll('.map-point').forEach(point=>{
     const base=point.classList.contains('fallback')?4.9:4.4;
-    point.setAttribute('r',Math.max(1.6,base*pointScale).toFixed(2));
+    point.setAttribute('r',Math.max(.35,base*pointScale).toFixed(2));
+  });
+  updateMapLabelSizes();
+}
+
+function updateMapLabelSizes(){
+  const spotLabels=chinaMap.querySelectorAll('.map-spot-label');
+  const regionLabels=chinaMap.querySelectorAll('.map-label');
+  const zoom=Math.max(1000/mapView.w,640/mapView.h);
+  const showLabels=zoom>=4;
+  const offsetScale=Math.max(mapView.w/1000,mapView.h/640);
+  const desiredSpotSize=9.8+Math.min(3.7,Math.max(0,(zoom-1.65)*.18));
+  const spotFontSize=Math.max(.45,desiredSpotSize/zoom);
+  const spotStrokeWidth=Math.max(.14,(2.4+Math.min(1.2,(zoom-1.65)*.05))/zoom);
+  const regionFontSize=Math.max(.62,14/zoom);
+  const regionStrokeWidth=Math.max(.2,2.8/zoom);
+
+  regionLabels.forEach(label=>{
+    label.style.fontSize=regionFontSize.toFixed(2)+'px';
+    label.style.strokeWidth=regionStrokeWidth.toFixed(2)+'px';
+  });
+
+  spotLabels.forEach(label=>{
+    label.style.display=showLabels?'':'none';
+    if(!showLabels)return;
+    const x=parseFloat(label.dataset.x);
+    const y=parseFloat(label.dataset.y);
+    const dx=parseFloat(label.dataset.dx);
+    const dy=parseFloat(label.dataset.dy);
+    label.setAttribute('x',(x+dx*offsetScale).toFixed(2));
+    label.setAttribute('y',(y+dy*offsetScale).toFixed(2));
+    label.style.fontSize=spotFontSize.toFixed(2)+'px';
+    label.style.strokeWidth=spotStrokeWidth.toFixed(2)+'px';
   });
 }
 
 function fitMapToFiltered(){
-  const points=getFiltered().map(getMapPoint);
+  const points=getFiltered().map(getMapPoint).filter(Boolean);
   if(!points.length){setMapViewBox(MAP_BASE_VIEW);return}
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
@@ -531,7 +524,7 @@ function renderFallbackMapOutline(){
 
 function renderMap(){
   const filtered=getFiltered();
-  const visible=filtered.map(s=>({spot:s,idx:spots.indexOf(s),point:getMapPoint(s)}));
+  const visible=filtered.map(s=>({spot:s,idx:spots.indexOf(s),point:getMapPoint(s)})).filter(v=>v.point);
   chinaMap.innerHTML='';
 
   const defs=svgEl('defs');
@@ -544,6 +537,8 @@ function renderMap(){
   if(!renderProvinceBoundaries())renderFallbackMapOutline();
 
   const pointGroup=svgEl('g');
+  const labelGroup=svgEl('g');
+  const labelOffsets=[[7,-7],[7,8],[-7,-7],[-7,8],[0,-12],[0,12]];
   const pointScale=Math.max(mapView.w/1000,mapView.h/640);
   visible.forEach(({spot,idx,point})=>{
     const radius=(point.estimated?4.9:4.4)*pointScale;
@@ -551,29 +546,55 @@ function renderMap(){
       'class':'map-point '+(point.estimated?'fallback':''),
       cx:point.x.toFixed(2),
       cy:point.y.toFixed(2),
-      r:Math.max(1.6,radius).toFixed(2),
+      r:Math.max(.35,radius).toFixed(2),
       tabindex:0,
       role:'button',
       'aria-label':spot.name
     });
-    circle.addEventListener('mouseenter',e=>showMapTooltip(e,spot,point.source));
+    circle.addEventListener('mouseenter',e=>showMapTooltip(e,spot));
     circle.addEventListener('mousemove',e=>moveMapTooltip(e));
     circle.addEventListener('mouseleave',hideMapTooltip);
-    circle.addEventListener('focus',e=>showMapTooltip(e,spot,point.source));
+    circle.addEventListener('focus',e=>showMapTooltip(e,spot));
     circle.addEventListener('blur',hideMapTooltip);
     circle.addEventListener('click',e=>{e.stopPropagation();openModal(idx)});
     circle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModal(idx)}});
     pointGroup.appendChild(circle);
+
+    const [dx,dy]=labelOffsets[idx%labelOffsets.length];
+    const label=svgEl('text',{
+      'class':'map-spot-label',
+      x:(point.x+dx).toFixed(2),
+      y:(point.y+dy).toFixed(2),
+      'text-anchor':dx<0?'end':dx>0?'start':'middle'
+    });
+    label.dataset.x=point.x;
+    label.dataset.y=point.y;
+    label.dataset.dx=dx;
+    label.dataset.dy=dy;
+    label.setAttribute('tabindex','0');
+    label.setAttribute('role','button');
+    label.setAttribute('aria-label',spot.name);
+    label.textContent=spot.name;
+    label.addEventListener('mouseenter',e=>{circle.classList.add('hovered');showMapTooltip(e,spot)});
+    label.addEventListener('mousemove',e=>moveMapTooltip(e));
+    label.addEventListener('mouseleave',()=>{circle.classList.remove('hovered');hideMapTooltip()});
+    label.addEventListener('focus',e=>{circle.classList.add('hovered');showMapTooltip(e,spot)});
+    label.addEventListener('blur',()=>{circle.classList.remove('hovered');hideMapTooltip()});
+    label.addEventListener('click',e=>{e.stopPropagation();openModal(idx)});
+    label.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModal(idx)}});
+    labelGroup.appendChild(label);
   });
   chinaMap.appendChild(pointGroup);
+  chinaMap.appendChild(labelGroup);
+  updateMapPointSizes();
 
   const fallbackCount=visible.filter(v=>v.point.estimated).length;
   mapSummary.innerHTML=`显示 <strong>${visible.length}</strong> 个景区点位`+(fallbackCount?`，其中 <strong>${fallbackCount}</strong> 个为城市/省份估算位置`:'');
   mapEmpty.classList.toggle('active',visible.length===0);
 }
 
-function showMapTooltip(event,spot,source){
-  mapTooltip.innerHTML=`<strong>${spot.name}</strong>${spot.province} · ${spot.city}<br>${spot.category} · ${spot.year}年入选<br>位置：${source}`;
+function showMapTooltip(event,spot){
+  mapTooltip.innerHTML=`<strong>${spot.name}</strong>${spot.province} · ${spot.city}<br>${spot.category} · ${spot.year}年入选<br>${spot.desc}`;
   mapTooltip.classList.add('active');
   moveMapTooltip(event);
 }
@@ -614,8 +635,9 @@ function getImgBg(spot){
 }
 
 function getAmapUrl(spot){
-  if(spot.lat&&spot.lng){
-    return `https://uri.amap.com/marker?position=${spot.lng},${spot.lat}&name=${encodeURIComponent(spot.name)}`;
+  const coord=getCanonicalCoord(spot);
+  if(coord){
+    return `https://uri.amap.com/marker?position=${coord.lng},${coord.lat}&name=${encodeURIComponent(spot.name)}`;
   }
   return `https://uri.amap.com/search?keyword=${encodeURIComponent(spot.name+' '+spot.city)}`;
 }
@@ -652,9 +674,7 @@ function render(){
   const pageItems=filtered.slice(start,start+ITEMS_PER_PAGE);
   const isList=currentView==='list';
 
-  resultInfo.innerHTML=`共找到 <strong>${filtered.length}</strong> 个景区`+(totalPages>1?`，第 ${currentPage}/${totalPages} 页`:'');
   grid.innerHTML=pageItems.map(renderCard).join('');
-  resultInfo.style.display=isList?'flex':'none';
   grid.style.display=isList?'grid':'none';
   noResult.style.display=isList&&!filtered.length?'block':'none';
 
@@ -681,6 +701,7 @@ let _galleryState={imgs:[],cur:0};
 
 function openModal(idx){
   const s=spots[idx];
+  const coord=getCanonicalCoord(s);
   const modalImgEl=document.getElementById('modalImg');
   // Use local gallery if available
   if(s.imgs&&s.imgs.length>1){
@@ -702,7 +723,7 @@ function openModal(idx){
     <div class="modal-info-item"><div class="label">所在城市</div><div class="value">${s.city}</div></div>
     <div class="modal-info-item"><div class="label">景区类别</div><div class="value">${s.category}</div></div>
     <div class="modal-info-item"><div class="label">入选年份</div><div class="value">${s.year}年</div></div>
-    <div class="modal-info-item"><div class="label">地理坐标</div><div class="value">${s.lat?`${s.lat}°N, ${s.lng}°E`:'—'}</div></div>
+    <div class="modal-info-item"><div class="label">地理坐标</div><div class="value">${coord?`${coord.lat}°N, ${coord.lng}°E`:'—'}</div></div>
     <div class="modal-info-item"><div class="label">景区级别</div><div class="value">国家AAAAA级</div></div>`;
   document.getElementById('modalLinks').innerHTML=`<a class="link-btn" href="https://baike.baidu.com/item/${encodeURIComponent(_baikeUrls[s.name]||s.name)}" target="_blank" rel="noopener">百度百科</a>
     <a class="link-btn map-btn" href="${getAmapUrl(s)}" target="_blank" rel="noopener">高德地图</a>`;
@@ -758,7 +779,7 @@ chinaMap.addEventListener('wheel',e=>{
   zoomMap(e.deltaY < 0 ? .86 : 1.16,center);
 },{passive:false});
 chinaMap.addEventListener('pointerdown',e=>{
-  if(e.target.classList.contains('map-point'))return;
+  if(e.target.classList.contains('map-point')||e.target.classList.contains('map-spot-label'))return;
   mapDragging=true;
   chinaMap.classList.add('dragging');
   chinaMap.setPointerCapture(e.pointerId);

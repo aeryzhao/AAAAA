@@ -2,6 +2,10 @@
 const { filterSpots, buildCityAverages, getSpotLatLng, getSpotsBounds } = require('../../utils/util')
 
 const app = getApp()
+const LABEL_VISIBLE_SCALE = 8
+const MARKER_SIZE = 16
+const LABEL_ANCHOR_X = 12
+const LABEL_ANCHOR_Y = -20
 
 Page({
   data: {
@@ -44,7 +48,9 @@ Page({
       categoryOptions: ['全部类别', ...categories]
     })
     this.cityAverages = buildCityAverages(spots)
+    this._currentScale = this.data.scale
     this._labelsVisible = false
+    this._labelFontSize = 10
     this.updateMarkers()
   },
 
@@ -71,8 +77,20 @@ Page({
 
     console.log('[Map] updateMarkers: filtered =', filtered.length)
 
+    let nextView = null
+    if (filtered.length > 0) {
+      const bounds = getSpotsBounds(filtered, this.cityAverages, cityCenters, provinceCenters)
+      nextView = {
+        centerLat: bounds.centerLat,
+        centerLng: bounds.centerLng,
+        scale: this._calcScale(bounds)
+      }
+    }
+
     // 构建 markers
-    const showLabel = this.data.scale >= 12
+    const nextScale = nextView ? nextView.scale : (this._currentScale || this.data.scale)
+    const showLabel = this._shouldShowLabels(nextScale)
+    const labelFontSize = this._getLabelFontSize(nextScale)
     this._filteredSpots = filtered
     const markers = filtered.map((spot, i) => {
       const coord = getSpotLatLng(spot, this.cityAverages, cityCenters, provinceCenters)
@@ -82,8 +100,8 @@ Page({
         longitude: coord.lng,
         title: spot.name,
         iconPath: '/assets/marker.png',
-        width: 24,
-        height: 24,
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
         callout: {
           content: spot.name + '\n' + spot.province + ' · ' + spot.city + '\n' + spot.category + ' · ' + spot.year + '年',
           color: '#17211f',
@@ -95,34 +113,40 @@ Page({
           padding: 8,
           display: 'BYCLICK'
         },
-        label: {
-          content: spot.name,
-          color: '#17211f',
-          fontSize: 10,
-          anchorX: -1,
-          anchorY: -32,
-          bgColor: '#fffdf8',
-          borderRadius: 4,
-          padding: 4,
-          opacity: showLabel ? 1 : 0
-        }
+        ...(showLabel ? { label: this._buildMarkerLabel(spot, labelFontSize) } : {})
       }
     })
 
     this._labelsVisible = showLabel
+    this._labelFontSize = labelFontSize
+    this._currentScale = nextScale
     this.setData({
       markers,
-      markerCount: filtered.length
+      markerCount: filtered.length,
+      ...(nextView || {})
     })
+  },
 
-    // 自动调整视野
-    if (filtered.length > 0) {
-      const bounds = getSpotsBounds(filtered, this.cityAverages, cityCenters, provinceCenters)
-      this.setData({
-        centerLat: bounds.centerLat,
-        centerLng: bounds.centerLng,
-        scale: this._calcScale(bounds)
-      })
+  _shouldShowLabels(scale) {
+    return Number(scale) >= LABEL_VISIBLE_SCALE
+  },
+
+  _getLabelFontSize(scale) {
+    if (!this._shouldShowLabels(scale)) return 10
+    return Math.min(14, 10 + (Number(scale) - LABEL_VISIBLE_SCALE) * 0.8)
+  },
+
+  _buildMarkerLabel(spot, fontSize) {
+    return {
+      content: spot.name,
+      color: '#17211f',
+      fontSize,
+      anchorX: LABEL_ANCHOR_X,
+      anchorY: LABEL_ANCHOR_Y,
+      bgColor: '#fffdf8',
+      borderRadius: 4,
+      padding: 4,
+      opacity: 1
     }
   },
 
@@ -154,11 +178,13 @@ Page({
     }
 
     const bounds = getSpotsBounds(filtered, this.cityAverages, cityCenters, provinceCenters)
+    const scale = this._calcScale(bounds)
+    this._currentScale = scale
     this.setData({
       centerLat: bounds.centerLat,
       centerLng: bounds.centerLng,
-      scale: this._calcScale(bounds)
-    })
+      scale
+    }, () => this._updateMarkerLabels(scale))
   },
 
   // 点击标记或标签
@@ -191,16 +217,31 @@ Page({
     const mapCtx = wx.createMapContext('scenicMap')
     mapCtx.getScale({
       success: (res) => {
-        const scale = res.scale
-        const showLabel = scale >= 12
-        if (showLabel === this._labelsVisible) return
-        this._labelsVisible = showLabel
-        const markers = this.data.markers.map(m => ({
-          ...m,
-          label: { ...m.label, opacity: showLabel ? 1 : 0 }
-        }))
-        this.setData({ markers })
+        this._updateMarkerLabels(res.scale)
       }
     })
+  },
+
+  _updateMarkerLabels(scale) {
+    const showLabel = this._shouldShowLabels(scale)
+    const labelFontSize = this._getLabelFontSize(scale)
+    this._currentScale = scale
+    if (showLabel === this._labelsVisible && labelFontSize === this._labelFontSize) return
+
+    const markers = this.data.markers.map((marker, i) => {
+      const spot = this._filteredSpots && this._filteredSpots[i]
+      const nextMarker = {
+        ...marker
+      }
+      if (showLabel && spot) {
+        nextMarker.label = this._buildMarkerLabel(spot, labelFontSize)
+      } else {
+        delete nextMarker.label
+      }
+      return nextMarker
+    })
+    this._labelsVisible = showLabel
+    this._labelFontSize = labelFontSize
+    this.setData({ markers })
   }
 })
