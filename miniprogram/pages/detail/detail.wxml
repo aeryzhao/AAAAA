@@ -55,10 +55,13 @@
   <!-- 操作按钮 -->
   <view class="actions">
     <view class="btn-primary" bindtap="openBaike">
-      <text>📖 查看百度百科</text>
+      <text>📖 查看参考链接</text>
     </view>
-    <view class="btn-secondary" bindtap="openMap">
-      <text>🗺️ 在地图中查看</text>
+    <view class="action-row">
+      <button class="btn-secondary btn-share" open-type="share">分享景区</button>
+      <view class="btn-secondary btn-map" bindtap="openMap">
+        <text>🗺️ 在地图中查看</text>
+      </view>
     </view>
   </view>
 </view>

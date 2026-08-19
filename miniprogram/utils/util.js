@@ -66,7 +66,7 @@ function getSpotsBounds(spots, cityAverages, cityCenters, provinceCenters) {
 }
 
 /**
- * 打开百度百科 - 复制链接到剪贴板
+ * 打开参考链接 - 复制链接到剪贴板
  */
 function openBaike(spotName, baikeUrls) {
   const baikeTitle = baikeUrls[spotName] || spotName

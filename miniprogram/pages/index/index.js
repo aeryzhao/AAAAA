@@ -23,8 +23,23 @@ Page({
   },
 
   onLoad() {
+    wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] })
     console.log('[Index] onLoad 开始')
     this.initData()
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '5A景区大全｜全国景区列表',
+      path: '/pages/index/index'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '5A景区大全｜全国景区列表',
+      query: ''
+    }
   },
 
   onShow() {

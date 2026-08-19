@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "5A景区大全",
-  "enablePullDownRefresh": false
+  "enablePullDownRefresh": false,
+  "enableShareTimeline": true
 }

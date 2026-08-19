@@ -1,3 +1,4 @@
 {
-  "navigationBarTitleText": "景区详情"
+  "navigationBarTitleText": "景区详情",
+  "enableShareTimeline": true
 }
